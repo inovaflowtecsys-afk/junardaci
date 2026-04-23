@@ -1,0 +1,180 @@
+.container {
+  padding: 40px;
+  animation: fadeIn 0.35s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.title h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #3d3022;
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+
+.title p {
+  color: #8a7452;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  background: linear-gradient(135deg, #d8ba89 0%, #c9a876 100%);
+  color: white;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(200, 169, 107, 0.28);
+  transition: 0.18s ease;
+}
+
+.addBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(200, 169, 107, 0.36);
+}
+
+.tableCard {
+  background: #fffdfa;
+  border: 1px solid #dcc8a1;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(223, 198, 150, 0.10);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead tr {
+  background: #f8f1e4;
+  border-bottom: 1px solid #e7d7b8;
+}
+
+.table th {
+  padding: 14px 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6f5d3d;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  text-align: left;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid #f0e6d0;
+  transition: background 0.15s ease;
+}
+
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: #fffbf4;
+}
+
+.table td {
+  padding: 14px 20px;
+  font-size: 0.875rem;
+  color: #3d3022;
+}
+
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.iconCircle {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f4e8cf;
+  color: #b8892a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.badgeAtivo {
+  background: #dcf5dc;
+  color: #2a6e2a;
+}
+
+.badgeInativo {
+  background: #fce4e4;
+  color: #b91c1c;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: #fff4e0;
+  border: 1px solid #e8d5a9;
+  color: #8a6320;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.editBtn:hover {
+  background: #f4e8cf;
+  border-color: #c9a876;
+}
+
+.deleteBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #fce4e4;
+  border: 1px solid #f5c6c6;
+  color: #b91c1c;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.deleteBtn:hover {
+  background: #fbb8b8;
+}

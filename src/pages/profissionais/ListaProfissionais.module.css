@@ -1,0 +1,207 @@
+.container {
+  padding: 40px;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.title h1 {
+  font-size: 2.8rem;
+  margin-bottom: 8px;
+  letter-spacing: -1px;
+}
+
+.title p {
+  color: var(--color-text-light);
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.addBtn {
+  background: var(--grad-primary);
+  color: var(--color-dark);
+  padding: 14px 28px;
+  border-radius: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+
+.toolbar {
+  margin-bottom: 32px;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  padding: 14px 20px;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 480px;
+  border: 1px solid var(--color-border);
+}
+
+.search:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-dark);
+}
+
+.search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 32px;
+}
+
+.card {
+  background: white;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--color-border);
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+  border-color: var(--color-primary);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  background: var(--color-bg-3);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.5rem;
+  overflow: hidden;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
+.badge {
+  background: var(--color-bg-3);
+  color: var(--color-text-light);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.badgeAdmin {
+  background: var(--color-primary);
+  color: var(--color-dark);
+}
+
+.cardBody h3 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.specialty {
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+}
+
+.contact {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.contactItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text-light);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.contactItem svg {
+  color: var(--color-primary);
+}
+
+.cardFooter {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.editBtn {
+  flex: 1;
+  padding: 12px;
+  background: var(--color-bg-3);
+  color: var(--color-dark);
+  border-radius: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+
+.editBtn:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.deleteBtn {
+  width: 44px;
+  height: 44px;
+  background: #fee2e2;
+  color: var(--color-error);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.deleteBtn:hover {
+  background: var(--color-error);
+  color: white;
+}

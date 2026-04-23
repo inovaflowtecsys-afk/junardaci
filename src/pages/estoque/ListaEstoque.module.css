@@ -1,0 +1,136 @@
+.container {
+  padding: 40px;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.title h1 {
+  font-size: 2.8rem;
+  margin-bottom: 8px;
+  letter-spacing: -1px;
+}
+
+.title p {
+  color: var(--color-text-light);
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+}
+
+.btn {
+  padding: 14px 24px;
+  border-radius: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.entryBtn {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.entryBtn:hover {
+  background: #2e7d32;
+  color: white;
+  transform: translateY(-4px);
+}
+
+.exitBtn {
+  background: #fee2e2;
+  color: var(--color-error);
+}
+
+.exitBtn:hover {
+  background: var(--color-error);
+  color: white;
+  transform: translateY(-4px);
+}
+
+.toolbar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  padding: 14px 20px;
+  border-radius: 18px;
+  max-width: 480px;
+  border: 1px solid var(--color-border);
+}
+
+.card {
+  background: white;
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.cardHeader {
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--color-bg-3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-dark);
+}
+
+.cardHeader h2 {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 20px 24px;
+  background: var(--color-bg-3);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-text-light);
+  font-weight: 800;
+  text-align: left;
+}
+
+.table td {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-bg-3);
+  font-size: 0.95rem;
+  color: var(--color-dark);
+  font-weight: 500;
+}
+
+.badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.entry { background: #e8f5e9; color: #2e7d32; }
+.exit { background: #fee2e2; color: var(--color-error); }

@@ -1,0 +1,15 @@
+:root {
+  --color-primary: #2596be;
+  --color-secondary: #bcab9a;
+  --color-gray-light: #d1d1c7;
+  --color-bg-1: #e2dbd0;
+  --color-gold: #ccab63;
+  --color-dark: #0e0e0e;
+  --color-bg-2: #ebe9dd;
+  --color-text: #94928a;
+  --radius: 10px;
+  --shadow: 0 2px 12px rgba(37, 150, 190, 0.08);
+  --font-titles: 'Cormorant Garamond', serif;
+  --font-body: 'Lato', sans-serif;
+  --transition: 0.2s ease;
+}

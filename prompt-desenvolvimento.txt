@@ -1,0 +1,594 @@
+================================================================================
+  PROMPT DE DESENVOLVIMENTO — SISTEMA WEB CLÍNICA JULIANA NARDACI
+================================================================================
+
+PROJETO
+-------
+Nome        : Sistema Web — Clínica Juliana Nardaci
+Versão      : 1.0.0
+Repositório : https://github.com/inovaflowtecsys-afk/junardaci
+Descrição   : Sistema de gestão clínica completo, responsivo, com autenticação
+              Supabase, cadastros, estoque, atendimentos e prontuários.
+Status dados: Mock — fluxo de dados fictícios até configuração do Supabase
+
+
+================================================================================
+STACK TÉCNICA
+================================================================================
+
+Frontend    : React 18 + Vite
+Runtime     : Node.js >= 18
+Roteamento  : react-router-dom v6
+Banco       : Supabase (PostgreSQL + Auth + Storage)
+Estilo      : CSS Modules + variáveis CSS nativas (sem Tailwind, sem styled-components)
+Ícones      : lucide-react
+Máscaras    : IMask ou react-input-mask
+Datas       : date-fns
+HTTP        : fetch nativo (ViaCEP para busca de CEP)
+
+
+================================================================================
+IDENTIDADE VISUAL
+================================================================================
+
+Logotipo         : https://www.inovaflowtec.com.br/svg/junadarci.png
+Referência visual: https://i.pinimg.com/736x/49/21/8a/49218abe370cfc19b9d29dc542f12c3e.jpg
+
+PALETA DE CORES
+  --color-primary    : #2596be  → Azul principal, botões CTA
+  --color-secondary  : #bcab9a  → Elementos secundários
+  --color-gray-light : #d1d1c7  → Bordas e separadores
+  --color-bg-1       : #e2dbd0  → Fundo principal
+  --color-gold       : #ccab63  → Destaques, badges gold
+  --color-dark       : #0e0e0e  → Títulos e contraste alto
+  --color-bg-2       : #ebe9dd  → Fundo alternativo
+  --color-text       : #94928a  → Cor padrão de texto
+  --radius           : 10px
+  --shadow           : 0 2px 12px rgba(37,150,190,0.08)
+
+TIPOGRAFIA
+  Títulos : Cormorant Garamond, serif
+  Corpo   : Lato, sans-serif
+  Cor     : #94928a
+
+
+================================================================================
+ESTRUTURA DE PASTAS
+================================================================================
+
+src/
+├── assets/           → Logotipo, ícones e imagens estáticas
+├── components/       → Componentes reutilizáveis
+│   ├── Modal/
+│   ├── ConfirmDialog/
+│   ├── Toast/
+│   ├── Badge/
+│   ├── MaskInput/
+│   ├── CEPInput/
+│   ├── Button/
+│   ├── Input/
+│   └── Table/
+├── contexts/         → AuthContext.jsx (estado global de autenticação)
+├── data/             → mockData.js (todos os dados fictícios)
+├── hooks/            → useCEP.js | useMask.js | useToast.js
+├── layouts/          → MainLayout.jsx (sidebar+header+outlet) | AuthLayout.jsx
+├── pages/
+│   ├── auth/         → Login.jsx | EsqueciSenha.jsx | RedefinirSenha.jsx
+│   ├── dashboard/    → Dashboard.jsx
+│   ├── profissionais/→ ListaProfissionais.jsx | FormProfissional.jsx
+│   ├── clientes/     → ListaClientes.jsx | FormCliente.jsx
+│   ├── fornecedores/ → ListaFornecedores.jsx | FormFornecedor.jsx
+│   ├── produtos/     → ListaProdutos.jsx | FormProduto.jsx
+│   ├── estoque/      → ListaEstoque.jsx | FormMovimentacao.jsx
+│   ├── tratamentos/  → ListaTratamentos.jsx | FormTratamento.jsx
+│   └── atendimentos/ → ListaAtendimentos.jsx | FormAtendimento.jsx
+├── routes/           → AppRoutes.jsx (rotas protegidas e públicas)
+├── styles/           → global.css | variables.css
+└── utils/            → masks.js | validators.js | formatters.js
+
+
+================================================================================
+MÓDULO M01 — AUTENTICAÇÃO
+================================================================================
+
+Páginas : Login | EsqueciSenha | RedefinirSenha
+Supabase: auth.users
+
+REGRAS:
+  - Campo e-mail e senha com validação client-side antes de enviar
+  - Botão "Esqueci a senha" dispara sendPasswordResetEmail do Supabase
+  - Link de redefinição chega por e-mail e abre RedefinirSenha.jsx
+  - Enquanto Supabase não configurado: toast "Funcionalidade disponível após
+    configuração do Supabase"
+  - Mock: admin@clinica.com / Admin@123 → acesso total (role: admin)
+  - Mock: profissional@clinica.com / Prof@123 → acesso profissional
+  - Proteger todas as rotas internas com PrivateRoute via AuthContext
+
+
+================================================================================
+MÓDULO M02 — PROFISSIONAIS
+================================================================================
+
+Páginas: ListaProfissionais | FormProfissional
+Acesso : Apenas administrador (role=admin)
+Tabela : profissionais
+
+CAMPOS:
+  nome             → string, obrigatório
+  cpf              → string, máscara 000.000.000-00, único
+  data_nascimento  → date
+  cep              → string, máscara 00000-000, busca automática ViaCEP
+  logradouro       → string, preenchido pelo CEP
+  numero           → string
+  complemento      → string
+  bairro           → string, preenchido pelo CEP
+  cidade           → string, preenchido pelo CEP
+  uf               → string, 2 chars, preenchido pelo CEP
+  telefone         → string, máscara (00) 00000-0000
+  email            → string, formato e-mail, único
+  especialidade    → string
+  ativo            → boolean, default true
+
+REGRAS:
+  - Ao salvar novo profissional: chamar supabase.auth.admin.createUser
+    (mock: gerar UUID local)
+  - CPF e e-mail devem ser únicos
+  - Busca CEP: https://viacep.com.br/ws/{cep}/json/
+
+RELACIONAMENTOS: profissionais (1-1) → auth.users via user_id
+
+
+================================================================================
+MÓDULO M03 — CLIENTES
+================================================================================
+
+Páginas: ListaClientes | FormCliente
+Tabelas: clientes | anamneses
+
+CAMPOS:
+  nome             → string, obrigatório
+  cpf              → string, máscara 000.000.000-00
+  data_nascimento  → date
+  sexo             → enum: M | F | Outro
+  estado_civil     → enum: Solteiro | Casado | Divorciado | Viúvo | Outro
+  profissao        → string
+  cep              → string, máscara 00000-000, busca ViaCEP
+  logradouro       → string (preenchido pelo CEP)
+  numero           → string
+  complemento      → string
+  bairro           → string (preenchido pelo CEP)
+  cidade           → string (preenchido pelo CEP)
+  uf               → string (preenchido pelo CEP)
+  telefone         → string, máscara (00) 00000-0000
+  email            → string
+  indicado_por     → string
+  observacoes      → text
+  ativo            → boolean
+
+ABAS NO FORMULÁRIO:
+  [Aba 1] Dados Pessoais → todos os campos acima
+  [Aba 2] Anamneses      → upload de PDF + tabela com: data_adicao, nome_arquivo,
+                           botão download e excluir
+  [Aba 3] Atendimentos   → lista somente leitura com: status badge, data,
+                           tratamento, valor
+
+
+================================================================================
+MÓDULO M04 — FORNECEDORES
+================================================================================
+
+Páginas: ListaFornecedores | FormFornecedor
+Tabela : fornecedores
+
+CAMPOS:
+  tipo_pessoa    → enum: PF | PJ (altera máscara dinamicamente)
+  razao_social   → string, obrigatório
+  nome_fantasia  → string
+  cpf_cnpj       → PF: máscara 000.000.000-00
+                   PJ: máscara 00.000.000/0000-00
+  ie             → string (Inscrição Estadual, apenas PJ)
+  cep            → string, máscara 00000-000, busca ViaCEP
+  logradouro     → string (preenchido pelo CEP)
+  numero         → string
+  complemento    → string
+  bairro         → string (preenchido pelo CEP)
+  cidade         → string (preenchido pelo CEP)
+  uf             → string (preenchido pelo CEP)
+  contato        → string (nome da pessoa de contato)
+  telefone       → string, máscara (00) 00000-0000
+  email          → string
+  site           → string
+  observacoes    → text
+  ativo          → boolean
+
+REGRAS:
+  - Ao mudar tipo_pessoa: alterar máscara e label do CPF/CNPJ dinamicamente
+  - Busca CEP igual aos demais módulos
+
+
+================================================================================
+MÓDULO M05 — PRODUTOS
+================================================================================
+
+Páginas: ListaProdutos | FormProduto
+Tabela : produtos
+
+CAMPOS:
+  nome           → string, obrigatório
+  marca          → string
+  unidade        → string (ex: ml, un, g)
+  qtd_minima     → number
+  qtd_maxima     → number
+  saldo_estoque  → number, SOMENTE LEITURA (calculado pelas movimentações)
+  valor_medio    → currency, SOMENTE LEITURA (calculado pelo custo das entradas)
+  fornecedor_id  → uuid FK fornecedores
+  ativo          → boolean
+
+REGRAS:
+  - saldo_estoque e valor_medio: somente leitura, calculados pelo módulo Estoque
+  - Destacar em vermelho/laranja se saldo < qtd_minima
+
+
+================================================================================
+MÓDULO M06 — ESTOQUE
+================================================================================
+
+Páginas: ListaEstoque | FormMovimentacao
+Tabela : estoque_movimentacoes
+
+CAMPOS:
+  produto_id         → uuid FK produtos
+  tipo               → enum: ENTRADA | SAIDA
+  operacao:
+    ENTRADA          → COMPRA
+    SAIDA            → SAIDA_MANUAL | DEVOLUCAO | ATENDIMENTO
+  quantidade         → number, positivo
+  valor_unitario     → currency (obrigatório em ENTRADA/COMPRA)
+  fornecedor_id      → uuid FK (obrigatório em COMPRA)
+  atendimento_id     → uuid FK (preenchido automaticamente em ATENDIMENTO)
+  profissional_id    → uuid FK (responsável)
+  data_movimentacao  → timestamp, default now()
+  observacoes        → text
+
+REGRAS:
+  - SAIDA só permitida se saldo_estoque >= quantidade
+  - Cancelamento de atendimento gera ENTRADA tipo ESTORNO automaticamente
+
+
+================================================================================
+MÓDULO M07 — TRATAMENTOS
+================================================================================
+
+Páginas: ListaTratamentos | FormTratamento
+Tabela : tratamentos
+
+CAMPOS:
+  nome               → string, obrigatório
+  descricao          → text
+  valor              → currency, obrigatório
+  perc_max_desconto  → number 0–100 (ex: 15 = máximo 15% de desconto)
+  duracao_estimada   → number (minutos)
+  ativo              → boolean
+
+
+================================================================================
+MÓDULO M08 — ATENDIMENTOS
+================================================================================
+
+Páginas: ListaAtendimentos | FormAtendimento (com abas)
+Tabela : atendimentos
+
+CAMPOS PRINCIPAIS:
+  cliente_id               → uuid FK clientes (fixo após salvar)
+  tratamento_id            → uuid FK tratamentos
+  profissional_id          → uuid FK profissionais
+  valor_tratamento         → currency (preenchido automaticamente do tratamento)
+  desconto_valor           → currency, default 0
+  desconto_responsavel     → string
+  desconto_motivo          → text
+  valor_final              → currency calculado: valor_tratamento - desconto_valor
+  status                   → enum: ORCAMENTO | EM_ANDAMENTO | FINALIZADO | CANCELADO
+  data_inicio              → timestamp (preenchido ao Iniciar)
+  data_fim                 → timestamp (preenchido ao Finalizar)
+  cancelamento_responsavel → string
+  cancelamento_motivo      → text
+  data_cancelamento        → timestamp
+
+ABAS DO FORMULÁRIO:
+  [Aba 1] Geral         → dados principais + desconto + status + botões de ação
+  [Aba 2] Prontuários   → lista + cadastro de prontuários
+  [Aba 3] Produtos      → produtos utilizados com baixa direta no estoque
+  [Aba 4] Pagamentos    → pagamentos parciais/totais do atendimento
+
+--------------------------------------------------------------------------------
+FLUXO DE STATUS
+--------------------------------------------------------------------------------
+
+  [ORÇAMENTO] ──→ Iniciar Tratamento ──→ [EM ANDAMENTO] ──→ Finalizar ──→ [FINALIZADO]
+                                                │
+                                             Cancelar
+                                                │
+                                          [CANCELADO]
+
+STATUS: ORÇAMENTO
+  - Pode editar: tratamento, profissional e desconto
+  - Botão disponível: "Iniciar Tratamento"
+
+STATUS: EM ANDAMENTO
+  - Tratamento, profissional e valor: TRAVADOS (somente leitura)
+  - Pode adicionar/editar: Prontuários, Produtos, Pagamentos
+  - Botões disponíveis: "Finalizar Atendimento" | "Cancelar"
+
+STATUS: FINALIZADO
+  - Tudo somente leitura
+  - Nenhum botão de ação disponível
+
+STATUS: CANCELADO
+  - Tudo somente leitura
+  - Painel exibindo responsável e motivo do cancelamento
+
+--------------------------------------------------------------------------------
+REGRAS PARA FINALIZAR
+--------------------------------------------------------------------------------
+
+  ✔ Status deve ser EM_ANDAMENTO
+  ✔ Pelo menos 1 prontuário registrado
+  ✔ Soma dos pagamentos >= valor_final (sem pendência)
+  ✔ Exibir modal de confirmação antes de finalizar
+
+--------------------------------------------------------------------------------
+REGRAS PARA CANCELAR
+--------------------------------------------------------------------------------
+
+  ✔ Abrir modal customizado (NUNCA window.confirm nativo) com:
+      - responsavel: select de profissionais (obrigatório)
+      - motivo: textarea (obrigatório)
+  ✔ Ao confirmar:
+      - Apagar todos os pagamentos do atendimento
+      - Estornar todos os produtos (gerar ENTRADA/ESTORNO no estoque)
+      - Atendimento permanece no banco com status CANCELADO
+
+
+================================================================================
+MÓDULO M09 — PRONTUÁRIOS
+================================================================================
+
+Tabelas: prontuarios | prontuarios_anexos
+
+CAMPOS:
+  atendimento_id  → uuid FK
+  data_registro   → timestamp, default now()
+  responsavel_id  → uuid FK profissionais
+  descricao       → text, obrigatório
+  anexos:
+    id            → uuid
+    nome_arquivo  → string
+    data_upload   → timestamp
+    url           → string (Supabase Storage)
+
+REGRAS:
+  - Só pode ser adicionado se status = EM_ANDAMENTO
+  - Anexos: PDFs ou imagens de exames
+  - Listagem em tabela dentro da aba Prontuários do FormAtendimento
+
+
+================================================================================
+MÓDULO M10 — PAGAMENTOS
+================================================================================
+
+Tabela: pagamentos
+
+CAMPOS:
+  atendimento_id  → uuid FK
+  forma_pagamento → enum: DINHEIRO | PIX | CARTAO_CREDITO | CARTAO_DEBITO | OUTROS
+  valor           → currency, obrigatório
+  data_pagamento  → timestamp, default now()
+  observacoes     → string
+
+REGRAS:
+  - Soma dos pagamentos nunca pode exceder o valor_final do atendimento
+  - Exibir: total pago | saldo restante | badge: Pago | Parcial | Pendente
+  - Ao cancelar atendimento: apagar todos os registros de pagamento
+
+
+================================================================================
+MÓDULO M11 — DESCONTO (POP-UP)
+================================================================================
+
+CAMPOS:
+  valor_desconto  → currency (validado contra perc_max_desconto do tratamento)
+  responsavel     → select de profissionais (obrigatório)
+  motivo          → textarea (obrigatório)
+
+REGRAS:
+  - Ícone de % ao lado do valor do tratamento abre o Modal de Desconto
+  - Calcular automaticamente o percentual e exibir preview do valor_final
+  - Bloquear desconto acima do perc_max_desconto do tratamento
+  - Disponível apenas nos status: ORÇAMENTO e EM ANDAMENTO
+
+
+================================================================================
+COMPONENTES GLOBAIS
+================================================================================
+
+Modal
+  Props: isOpen | title | onClose | onConfirm | children | size (sm|md|lg)
+  Overlay escuro com animação de entrada/saída
+
+ConfirmDialog
+  Especialização do Modal para ações destrutivas (cancelar, excluir)
+  Props: mensagem | onConfirm | onCancel | tipo (danger|warning)
+  NUNCA usar window.alert, window.confirm ou window.prompt
+
+Toast
+  Notificações flutuantes no canto superior direito
+  Tipos: success | error | warning | info
+  Auto-dismiss em 4 segundos
+
+MaskInput
+  Input com máscara configurável
+  Props: mask | value | onChange | label | error
+  Máscaras: CPF 000.000.000-00 | CNPJ 00.000.000/0000-00
+            CEP 00000-000 | Telefone (00) 00000-0000
+
+Badge (Status de Atendimento)
+  ORÇAMENTO    → cor #ccab63  (dourado)
+  EM ANDAMENTO → cor #2596be  (azul)
+  FINALIZADO   → cor #4caf50  (verde)
+  CANCELADO    → cor #e57373  (vermelho)
+
+CEPInput
+  Input de CEP com botão de busca + spinner durante requisição
+  API: https://viacep.com.br/ws/{cep}/json/
+  Preenche automaticamente: logradouro, bairro, cidade, uf
+
+Sidebar
+  Menu lateral responsivo e colapsável
+  Itens: Dashboard | Profissionais (admin) | Clientes | Fornecedores |
+         Produtos | Estoque | Tratamentos | Atendimentos
+  Colapsa em telas < 768px
+
+Header
+  Logotipo + nome do usuário + role badge + botão Sair
+
+
+================================================================================
+DADOS MOCK
+================================================================================
+
+Arquivo: src/data/mockData.js
+
+Exportar arrays separados com IDs uuid fixos:
+  profissionais | clientes | fornecedores | produtos | movimentacoes |
+  tratamentos | atendimentos | prontuarios | pagamentos
+
+Usuários mock:
+  admin@clinica.com     / Admin@123  → role: admin
+  profissional@clinica.com / Prof@123 → role: profissional
+
+
+================================================================================
+SCHEMA SUPABASE (para configuração futura)
+================================================================================
+
+profissionais       (id, user_id, nome, cpf, data_nascimento, cep, logradouro,
+                     numero, complemento, bairro, cidade, uf, telefone, email,
+                     especialidade, ativo, created_at)
+
+clientes            (id, nome, cpf, data_nascimento, sexo, estado_civil,
+                     profissao, cep, logradouro, numero, complemento, bairro,
+                     cidade, uf, telefone, email, indicado_por, observacoes,
+                     ativo, created_at)
+
+anamneses           (id, cliente_id, nome_arquivo, data_adicao, url_arquivo,
+                     created_at)
+
+fornecedores        (id, tipo_pessoa, razao_social, nome_fantasia, cpf_cnpj,
+                     ie, cep, logradouro, numero, complemento, bairro, cidade,
+                     uf, contato, telefone, email, site, observacoes, ativo,
+                     created_at)
+
+produtos            (id, nome, marca, unidade, qtd_minima, qtd_maxima,
+                     fornecedor_id, ativo, created_at)
+
+estoque_movimentacoes (id, produto_id, tipo, operacao, quantidade,
+                       valor_unitario, fornecedor_id, atendimento_id,
+                       profissional_id, data_movimentacao, observacoes,
+                       created_at)
+
+tratamentos         (id, nome, descricao, valor, perc_max_desconto,
+                     duracao_estimada, ativo, created_at)
+
+atendimentos        (id, cliente_id, tratamento_id, profissional_id,
+                     valor_tratamento, desconto_valor, desconto_responsavel,
+                     desconto_motivo, valor_final, status, data_inicio,
+                     data_fim, cancelamento_responsavel, cancelamento_motivo,
+                     data_cancelamento, created_at)
+
+prontuarios         (id, atendimento_id, data_registro, responsavel_id,
+                     descricao, created_at)
+
+prontuarios_anexos  (id, prontuario_id, nome_arquivo, data_upload, url,
+                     created_at)
+
+pagamentos          (id, atendimento_id, forma_pagamento, valor,
+                     data_pagamento, observacoes, created_at)
+
+RLS: Habilitar Row Level Security em todas as tabelas.
+     Profissionais acessam apenas dados de sua clínica.
+     Admin acessa tudo.
+
+
+================================================================================
+VARIÁVEIS DE AMBIENTE (.env)
+================================================================================
+
+VITE_SUPABASE_URL=https://SEU_PROJETO.supabase.co
+VITE_SUPABASE_ANON_KEY=SUA_ANON_KEY_AQUI
+
+
+================================================================================
+ORDEM DE DESENVOLVIMENTO
+================================================================================
+
+  1.  Scaffold do projeto Vite + React — instalar dependências
+  2.  Configurar variáveis CSS globais, fontes e reset
+  3.  Criar mockData.js com todos os relacionamentos
+  4.  Implementar AuthContext + PrivateRoute
+  5.  AuthLayout + páginas Login, EsqueciSenha, RedefinirSenha
+  6.  MainLayout: Sidebar responsivo + Header
+  7.  Dashboard com cards de resumo
+  8.  Componentes globais: Modal, ConfirmDialog, Toast, Badge, MaskInput, CEPInput
+  9.  M02 Profissionais (CRUD completo)
+  10. M03 Clientes (CRUD + abas Anamneses + Atendimentos)
+  11. M04 Fornecedores (CRUD + máscara dinâmica PF/PJ)
+  12. M05 Produtos (CRUD)
+  13. M06 Estoque (movimentações)
+  14. M07 Tratamentos (CRUD)
+  15. M08–M11 Atendimentos com abas (Prontuários, Produtos, Pagamentos,
+              Desconto, Cancelamento)
+
+
+================================================================================
+INSTRUÇÕES PARA A IA DESENVOLVEDORA
+================================================================================
+
+OBRIGATÓRIO:
+  - Gerar TODOS os arquivos completos — nenhum arquivo com "// TODO" ou placeholder
+  - CSS exclusivamente com variáveis definidas em :root — proibido cores hardcoded
+  - Todos os formulários com validação client-side antes de qualquer operação
+  - Modais NUNCA usam window.alert, window.confirm ou window.prompt
+  - Busca de CEP: exibir spinner durante a requisição assíncrona
+  - Máscaras funcionam enquanto o usuário digita (tempo real)
+  - Responsividade: sidebar colapsa em < 768px, tabelas viram cards no mobile
+  - Simular latência mock com setTimeout de 300–600ms
+
+QUALIDADE VISUAL:
+  - Seguir paleta de cores exatamente como definida
+  - Hover states e transições suaves em todos os elementos (0.2s ease)
+  - Tabelas com linhas alternadas para facilitar leitura
+  - Status badges com cor semântica da paleta
+
+ENTREGA:
+  - Estrutura de pastas completa conforme especificado
+  - package.json com todas as dependências
+  - .env.example documentado
+  - README.md com instruções de instalação e configuração
+
+
+================================================================================
+GIT
+================================================================================
+
+Repositório  : https://github.com/inovaflowtecsys-afk/junardaci
+Branch padrão: main
+.gitignore   : node_modules | dist | .env | .env.local | *.log | .DS_Store
+Commit inicial: "chore: scaffold inicial + prompt de desenvolvimento"
+
+Para conectar ao GitHub após criar o repositório:
+  git remote add origin https://github.com/inovaflowtecsys-afk/junardaci.git
+  git push -u origin main
+
+================================================================================
+  Desenvolvido por InovaFlowTec — https://www.inovaflowtec.com.br
+================================================================================

@@ -1,0 +1,199 @@
+.container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  animation: fadeIn 0.4s ease;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.titleArea {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.backBtn {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #f5f0e8;
+  border: 1px solid #e8dcc8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8a7a5b;
+  transition: var(--transition);
+}
+
+.backBtn:hover {
+  background: #ebe3d8;
+  border-color: #dbb597;
+}
+
+.header h1 {
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
+}
+
+.saveBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  background: linear-gradient(135deg, #c8a96b 0%, #dbb597 100%);
+  color: white;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: var(--transition);
+  box-shadow: 0 4px 14px rgba(200, 169, 107, 0.24);
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.saveBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(200, 169, 107, 0.32);
+}
+
+.content {
+  display: flex;
+  gap: 24px;
+}
+
+.profileCard {
+  display: flex;
+  gap: 32px;
+  width: 100%;
+}
+
+.avatarSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-width: 180px;
+  padding: 24px;
+  background: #fffdf8;
+  border-radius: 14px;
+  border: 1px solid #e8dcc8;
+}
+
+.avatarContainer {
+  position: relative;
+}
+
+.avatar {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c8a96b 0%, #dbb597 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 2.5rem;
+  font-weight: 700;
+  border: 4px solid white;
+  box-shadow: 0 8px 24px rgba(200, 169, 107, 0.24);
+}
+
+.cameraBtn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #e8dcc8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c8a96b;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.cameraBtn:hover {
+  background: #f5f0e8;
+  border-color: #c8a96b;
+}
+
+.avatarSection h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #3a3a3a;
+  text-align: center;
+  margin-top: 8px;
+}
+
+.role {
+  font-size: 0.85rem;
+  color: #8a7a5b;
+  text-align: center;
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding-top: 16px;
+  border-top: 1px solid #e8dcc8;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #c8a96b;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: #8a7a5b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.formCard {
+  flex: 1;
+  background: white;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+@media (max-width: 1000px) {
+  .profileCard {
+    flex-direction: column;
+  }
+
+  .avatarSection {
+    width: 100%;
+  }
+
+  .content {
+    flex-direction: column;
+  }
+}

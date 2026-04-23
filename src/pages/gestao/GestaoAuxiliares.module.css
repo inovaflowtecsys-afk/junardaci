@@ -1,0 +1,278 @@
+.container {
+  padding: 40px;
+  background: transparent;
+}
+
+.pageHeader {
+  background: #fffdfa;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin-bottom: 18px;
+  margin-top: 12px;
+  box-shadow: var(--shadow);
+}
+
+.titleWrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: #5d4e2f;
+}
+
+.titleWrap h1 {
+  margin: 0;
+  font-size: 1.26rem;
+  color: #3d3022;
+}
+
+.titleWrap p {
+  margin: 4px 0 0;
+  color: #6f5d3d;
+  font-size: 0.92rem;
+}
+
+.switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.switchBtn {
+  border: 1px solid var(--color-border);
+  background: #fff8ef;
+  color: #6c5a39;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.83rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.switchBtn:hover {
+  background: var(--color-bg-3);
+  color: var(--color-dark);
+}
+
+.activeSwitchBtn {
+  background: var(--grad-primary);
+  color: var(--color-dark);
+  border-color: #c9a876;
+}
+
+.card {
+  background: #fffdfa;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.cardHeader {
+  margin-bottom: 12px;
+}
+
+.cardHeader h2 {
+  margin: 0;
+  color: #5d4e2f;
+  font-size: 1rem;
+}
+
+.cardHeader p {
+  margin: 4px 0 0;
+  color: #8a7755;
+  font-size: 0.82rem;
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff1e6;
+  color: #9a5d1b;
+  border: 1px solid #f0d0b0;
+  font-size: 0.86rem;
+}
+
+.notice button,
+.refreshBtn,
+.cancelBtn,
+.editBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 700;
+}
+
+.addRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.addRow input {
+  flex: 1;
+  height: 40px;
+  border: 1px solid #dcc8a1;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.addRow input:focus {
+  border-color: #c9a876;
+  box-shadow: 0 0 0 3px rgba(200, 169, 107, 0.14);
+}
+
+.addRow button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 12px;
+  background: var(--grad-primary);
+  color: var(--color-dark);
+  font-weight: 700;
+  padding: 0 16px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.addRow button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(204, 171, 99, 0.22);
+}
+
+.refreshBtn {
+  background: #f6efe1;
+  color: #6d5a38;
+  padding: 0 14px;
+}
+
+.refreshBtn:hover {
+  background: #efe3cd;
+}
+
+.cancelBtn {
+  background: #f4efe6;
+  color: #6e5d3d;
+  padding: 0 14px;
+}
+
+.cancelBtn:hover {
+  background: #eadfca;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 620px;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid #f0e2c6;
+  font-size: 0.88rem;
+}
+
+.table th {
+  color: #7b6745;
+  font-weight: 700;
+}
+
+.table td {
+  color: #4a3f2a;
+}
+
+.actionCol {
+  width: 120px;
+}
+
+.actionCell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.editBtn {
+  margin-right: 8px;
+  padding: 6px 10px;
+  border: 1px solid #cdb58a;
+  background: #fff7ea;
+  color: #6b5428;
+}
+
+.editBtn:hover {
+  background: #f2e2bf;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.active {
+  background: #e9f7ef;
+  color: #1f7a3a;
+}
+
+.inactive {
+  background: #fdecec;
+  color: #b3261e;
+}
+
+.deleteBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #ef9a9a;
+  border-radius: 8px;
+  background: #fdecec;
+  color: #b3261e;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.deleteBtn:hover {
+  background: #e53935;
+  color: #fff;
+  border-color: #e53935;
+}
+
+@media (max-width: 900px) {
+  .container {
+    padding: 20px 16px;
+  }
+
+  .addRow {
+    flex-direction: column;
+  }
+
+  .addRow button {
+    height: 40px;
+    justify-content: center;
+  }
+}

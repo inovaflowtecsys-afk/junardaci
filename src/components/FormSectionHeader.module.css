@@ -1,0 +1,21 @@
+.wrapper {
+  margin-bottom: 16px;
+}
+
+.spacing {
+  margin-top: 28px;
+}
+
+.title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #6f5d3d;
+  text-transform: uppercase;
+}
+
+.line {
+  margin-top: 8px;
+  height: 1px;
+  background: #e7d7b8;
+}

@@ -1,0 +1,546 @@
+{
+  "projeto": {
+    "nome": "Sistema Web — Clínica Juliana Nardaci",
+    "versao": "1.0.0",
+    "repositorio": "https://github.com/inovaflowtecsys-afk/junardaci",
+    "descricao": "Sistema de gestão clínica completo, responsivo, com autenticação Supabase, cadastros, estoque, atendimentos e prontuários.",
+    "status_dados": "mock — fluxo de dados fictícios até configuração do Supabase"
+  },
+
+  "stack_tecnica": {
+    "frontend": "React 18 + Vite",
+    "runtime": "Node.js >= 18",
+    "roteamento": "react-router-dom v6",
+    "banco_de_dados": "Supabase (PostgreSQL + Auth + Storage)",
+    "estilo": "CSS Modules + variáveis CSS nativas (sem Tailwind, sem styled-components)",
+    "icones": "lucide-react",
+    "mascaras": "IMask ou react-input-mask",
+    "datas": "date-fns",
+    "http": "fetch nativo (ViaCEP para busca de CEP)"
+  },
+
+  "identidade_visual": {
+    "logotipo": "https://www.inovaflowtec.com.br/svg/junadarci.png",
+    "paleta_cores": {
+      "primaria":    "#2596be",
+      "secundaria":  "#bcab9a",
+      "cinza_claro": "#d1d1c7",
+      "fundo_1":     "#e2dbd0",
+      "dourado":     "#ccab63",
+      "escuro":      "#0e0e0e",
+      "fundo_2":     "#ebe9dd"
+    },
+    "tipografia": {
+      "cor_texto": "#94928a",
+      "fonte_titulos": "Cormorant Garamond, serif",
+      "fonte_corpo": "Lato, sans-serif"
+    },
+    "referencia_visual": "https://i.pinimg.com/736x/49/21/8a/49218abe370cfc19b9d29dc542f12c3e.jpg"
+  },
+
+  "variaveis_css_globais": {
+    ":root": {
+      "--color-primary":    "#2596be",
+      "--color-secondary":  "#bcab9a",
+      "--color-gray-light": "#d1d1c7",
+      "--color-bg-1":       "#e2dbd0",
+      "--color-gold":       "#ccab63",
+      "--color-dark":       "#0e0e0e",
+      "--color-bg-2":       "#ebe9dd",
+      "--color-text":       "#94928a",
+      "--radius":           "10px",
+      "--shadow":           "0 2px 12px rgba(37,150,190,0.08)"
+    }
+  },
+
+  "estrutura_pastas": {
+    "src": {
+      "assets":      "logotipo, ícones e imagens estáticas",
+      "components":  "componentes reutilizáveis (Modal, Button, Input, MaskInput, Table, Badge, Confirm, Toast)",
+      "contexts":    "AuthContext.jsx — estado global de autenticação",
+      "data":        "mockData.js — todos os dados fictícios organizados por módulo",
+      "hooks":       "useCEP.js, useMask.js, useToast.js",
+      "layouts":     "MainLayout.jsx (sidebar + header + outlet), AuthLayout.jsx",
+      "pages": {
+        "auth":         "Login.jsx, EsqueciSenha.jsx, RedefinirSenha.jsx",
+        "dashboard":    "Dashboard.jsx",
+        "profissionais":"ListaProfissionais.jsx, FormProfissional.jsx",
+        "clientes":     "ListaClientes.jsx, FormCliente.jsx (com aba Atendimentos e Anamneses)",
+        "fornecedores": "ListaFornecedores.jsx, FormFornecedor.jsx",
+        "produtos":     "ListaProdutos.jsx, FormProduto.jsx",
+        "estoque":      "ListaEstoque.jsx, FormMovimentacao.jsx",
+        "tratamentos":  "ListaTratamentos.jsx, FormTratamento.jsx",
+        "atendimentos": "ListaAtendimentos.jsx, FormAtendimento.jsx (tabs: Geral, Prontuário, Produtos, Pagamentos)"
+      },
+      "routes":      "AppRoutes.jsx — rotas protegidas e públicas",
+      "styles":      "global.css, variables.css",
+      "utils":       "masks.js, validators.js, formatters.js"
+    }
+  },
+
+  "modulos": [
+
+    {
+      "id": "M01",
+      "nome": "Autenticação",
+      "descricao": "Tela de login, recuperação e redefinição de senha via Supabase Auth",
+      "paginas": ["Login", "EsqueciSenha", "RedefinirSenha"],
+      "regras": [
+        "Campo e-mail e senha com validação client-side antes de enviar",
+        "Botão 'Esqueci a senha' dispara sendPasswordResetEmail do Supabase",
+        "Link de redefinição chega por e-mail e abre RedefinirSenha.jsx",
+        "Enquanto Supabase não estiver configurado, exibir toast 'Funcionalidade disponível após configuração do Supabase'",
+        "Mock: usuário admin@clinica.com / Admin@123 libera acesso total",
+        "Proteger todas as rotas internas com PrivateRoute que verifica AuthContext"
+      ],
+      "supabase_tabelas": [],
+      "supabase_auth": true
+    },
+
+    {
+      "id": "M02",
+      "nome": "Profissionais",
+      "descricao": "CRUD de profissionais — apenas administrador tem acesso",
+      "paginas": ["ListaProfissionais", "FormProfissional"],
+      "campos": {
+        "nome":            "string, obrigatório",
+        "cpf":             "string, máscara 000.000.000-00, único",
+        "data_nascimento": "date",
+        "cep":             "string, máscara 00000-000, busca automática ViaCEP",
+        "logradouro":      "string, preenchido pelo CEP",
+        "numero":          "string",
+        "complemento":     "string",
+        "bairro":          "string, preenchido pelo CEP",
+        "cidade":          "string, preenchido pelo CEP",
+        "uf":              "string, 2 chars, preenchido pelo CEP",
+        "telefone":        "string, máscara (00) 00000-0000",
+        "email":           "string, formato e-mail, único",
+        "especialidade":   "string",
+        "ativo":           "boolean, default true"
+      },
+      "regras": [
+        "Ao salvar novo profissional, chamar supabase.auth.admin.createUser (mock: gerar UUID local)",
+        "Apenas role='admin' visualiza e edita este módulo",
+        "CPF e e-mail devem ser únicos",
+        "Busca de CEP usa https://viacep.com.br/ws/{cep}/json/"
+      ],
+      "supabase_tabelas": ["profissionais"],
+      "relacionamentos": ["auth.users (1-1 via user_id)"]
+    },
+
+    {
+      "id": "M03",
+      "nome": "Clientes",
+      "descricao": "CRUD de clientes com aba de Anamneses e aba de Atendimentos",
+      "paginas": ["ListaClientes", "FormCliente"],
+      "campos": {
+        "nome":             "string, obrigatório",
+        "cpf":              "string, máscara 000.000.000-00",
+        "data_nascimento":  "date",
+        "sexo":             "enum: M | F | Outro",
+        "estado_civil":     "enum: Solteiro | Casado | Divorciado | Viúvo | Outro",
+        "profissao":        "string",
+        "cep":              "string, máscara 00000-000",
+        "logradouro":       "string",
+        "numero":           "string",
+        "complemento":      "string",
+        "bairro":           "string",
+        "cidade":           "string",
+        "uf":               "string",
+        "telefone":         "string, máscara (00) 00000-0000",
+        "email":            "string",
+        "indicado_por":     "string",
+        "observacoes":      "text",
+        "ativo":            "boolean"
+      },
+      "abas_no_form": [
+        {
+          "nome": "Dados Pessoais",
+          "descricao": "Todos os campos acima"
+        },
+        {
+          "nome": "Anamneses",
+          "descricao": "Upload de PDF de anamnese, registro de data_adicao e nome_arquivo. Listagem em tabela com data, nome do arquivo e botão download/excluir.",
+          "campos_anamnese": {
+            "id":          "uuid",
+            "cliente_id":  "uuid",
+            "nome_arquivo": "string",
+            "data_adicao":  "timestamp",
+            "url_arquivo":  "string (Supabase Storage)"
+          }
+        },
+        {
+          "nome": "Atendimentos",
+          "descricao": "Lista somente leitura de todos os atendimentos do cliente com status colorido, data, tratamento e valor"
+        }
+      ],
+      "supabase_tabelas": ["clientes", "anamneses"]
+    },
+
+    {
+      "id": "M04",
+      "nome": "Fornecedores",
+      "descricao": "CRUD de fornecedores PF e PJ",
+      "paginas": ["ListaFornecedores", "FormFornecedor"],
+      "campos": {
+        "tipo_pessoa":   "enum: PF | PJ",
+        "razao_social":  "string, obrigatório",
+        "nome_fantasia": "string",
+        "cpf_cnpj":      "string — máscara 000.000.000-00 se PF | 00.000.000/0000-00 se PJ (alternar dinamicamente)",
+        "ie":            "string (Inscrição Estadual, apenas PJ)",
+        "cep":           "string, máscara 00000-000",
+        "logradouro":    "string",
+        "numero":        "string",
+        "complemento":   "string",
+        "bairro":        "string",
+        "cidade":        "string",
+        "uf":            "string",
+        "contato":       "string (nome da pessoa de contato)",
+        "telefone":      "string, máscara (00) 00000-0000",
+        "email":         "string",
+        "site":          "string",
+        "observacoes":   "text",
+        "ativo":         "boolean"
+      },
+      "regras": [
+        "Ao mudar tipo_pessoa, alterar máscara do CPF/CNPJ e label do campo dinamicamente",
+        "Busca CEP igual aos demais módulos"
+      ],
+      "supabase_tabelas": ["fornecedores"]
+    },
+
+    {
+      "id": "M05",
+      "nome": "Produtos",
+      "descricao": "Cadastro do catálogo de produtos do estoque",
+      "paginas": ["ListaProdutos", "FormProduto"],
+      "campos": {
+        "nome":            "string, obrigatório",
+        "marca":           "string",
+        "unidade":         "string (ex: ml, un, g)",
+        "qtd_minima":      "number — alerta se saldo abaixo",
+        "qtd_maxima":      "number",
+        "saldo_estoque":   "number, somente leitura (calculado pelas movimentações)",
+        "valor_medio":     "currency, somente leitura (calculado pelo custo das entradas)",
+        "fornecedor_id":   "uuid (FK fornecedores)",
+        "ativo":           "boolean"
+      },
+      "regras": [
+        "saldo_estoque e valor_medio são somente leitura — calculados a partir do módulo Estoque",
+        "Destacar em vermelho/laranja se saldo < qtd_minima"
+      ],
+      "supabase_tabelas": ["produtos"]
+    },
+
+    {
+      "id": "M06",
+      "nome": "Estoque",
+      "descricao": "Movimentações de entrada e saída de produtos",
+      "paginas": ["ListaEstoque", "FormMovimentacao"],
+      "campos": {
+        "produto_id":       "uuid FK",
+        "tipo":             "enum: ENTRADA | SAIDA",
+        "operacao": {
+          "ENTRADA": ["COMPRA"],
+          "SAIDA":   ["SAIDA_MANUAL", "DEVOLUCAO", "ATENDIMENTO"]
+        },
+        "quantidade":       "number, positivo",
+        "valor_unitario":   "currency (obrigatório apenas em ENTRADA/COMPRA)",
+        "fornecedor_id":    "uuid FK (obrigatório em COMPRA)",
+        "atendimento_id":   "uuid FK (obrigatório em SAIDA/ATENDIMENTO, preenchido automaticamente)",
+        "profissional_id":  "uuid FK (responsável)",
+        "data_movimentacao":"timestamp, default now()",
+        "observacoes":      "text"
+      },
+      "regras": [
+        "SAIDA só permitida se saldo_estoque >= quantidade",
+        "Estornar movimento ao cancelar atendimento (gera ENTRADA tipo ESTORNO)"
+      ],
+      "supabase_tabelas": ["estoque_movimentacoes"]
+    },
+
+    {
+      "id": "M07",
+      "nome": "Tratamentos",
+      "descricao": "Tabela de preços e regras de desconto dos tratamentos oferecidos",
+      "paginas": ["ListaTratamentos", "FormTratamento"],
+      "campos": {
+        "nome":              "string, obrigatório",
+        "descricao":         "text",
+        "valor":             "currency, obrigatório",
+        "perc_max_desconto": "number 0-100, ex: 15 = 15%",
+        "duracao_estimada":  "number (minutos)",
+        "ativo":             "boolean"
+      },
+      "supabase_tabelas": ["tratamentos"]
+    },
+
+    {
+      "id": "M08",
+      "nome": "Atendimentos",
+      "descricao": "Módulo central de gestão dos atendimentos clínicos",
+      "paginas": ["ListaAtendimentos", "FormAtendimento"],
+      "status_fluxo": {
+        "ORCAMENTO":   "Estado inicial ao criar novo atendimento",
+        "EM_ANDAMENTO":"Após clicar em 'Iniciar Tratamento'",
+        "FINALIZADO":  "Após clicar em 'Finalizar Atendimento'",
+        "CANCELADO":   "Após clicar em 'Cancelar' e confirmar no modal"
+      },
+      "campos_principais": {
+        "cliente_id":          "uuid FK clientes, fixo após salvar",
+        "tratamento_id":       "uuid FK tratamentos",
+        "profissional_id":     "uuid FK profissionais",
+        "valor_tratamento":    "currency, preenchido automaticamente do tratamento",
+        "desconto_valor":      "currency, default 0",
+        "desconto_responsavel":"string",
+        "desconto_motivo":     "text",
+        "valor_final":         "currency calculado: valor_tratamento - desconto_valor",
+        "status":              "enum ORCAMENTO | EM_ANDAMENTO | FINALIZADO | CANCELADO",
+        "data_inicio":         "timestamp, preenchido ao Iniciar",
+        "data_fim":            "timestamp, preenchido ao Finalizar",
+        "cancelamento_responsavel": "string",
+        "cancelamento_motivo":      "text",
+        "data_cancelamento":        "timestamp"
+      },
+      "regras_status": {
+        "ORCAMENTO": [
+          "Pode editar tratamento, profissional e desconto",
+          "Botão 'Iniciar Tratamento' disponível"
+        ],
+        "EM_ANDAMENTO": [
+          "Tratamento, profissional e valor travados (somente leitura)",
+          "Pode adicionar/editar: Prontuários, Produtos usados, Pagamentos",
+          "Botão 'Finalizar Atendimento' e 'Cancelar' disponíveis"
+        ],
+        "FINALIZADO": [
+          "Tudo somente leitura",
+          "Nenhum botão de ação disponível"
+        ],
+        "CANCELADO": [
+          "Tudo somente leitura",
+          "Exibir painel com responsável e motivo do cancelamento"
+        ]
+      },
+      "validacoes_finalizar": [
+        "status deve ser EM_ANDAMENTO",
+        "Deve existir pelo menos 1 prontuário",
+        "Valor total de pagamentos deve ser >= valor_final (sem pendência)",
+        "Exibir modal de confirmação antes de finalizar"
+      ],
+      "validacoes_cancelar": [
+        "Abrir modal customizado (não alert nativo) com campos: responsavel (select profissionais) e motivo (textarea)",
+        "Ao confirmar: apagar todos os pagamentos do atendimento",
+        "Ao confirmar: estornar todos os produtos (gerar movimentação ENTRADA/ESTORNO no estoque)",
+        "Atendimento permanece no banco com status CANCELADO"
+      ],
+      "abas_form": [
+        "Geral (dados principais + desconto + status)",
+        "Prontuários",
+        "Produtos Utilizados",
+        "Pagamentos"
+      ],
+      "supabase_tabelas": ["atendimentos"]
+    },
+
+    {
+      "id": "M09",
+      "nome": "Prontuários",
+      "descricao": "Registros clínicos vinculados a um atendimento",
+      "campos": {
+        "atendimento_id":  "uuid FK",
+        "data_registro":   "timestamp, default now()",
+        "responsavel_id":  "uuid FK profissionais",
+        "descricao":       "text, obrigatório",
+        "anexos": [
+          {
+            "id":           "uuid",
+            "nome_arquivo": "string",
+            "data_upload":  "timestamp",
+            "url":          "string (Supabase Storage)"
+          }
+        ]
+      },
+      "regras": [
+        "Só pode ser adicionado se status = EM_ANDAMENTO",
+        "Anexos são PDFs ou imagens de exames",
+        "Listagem em tabela dentro da aba Prontuários do FormAtendimento"
+      ],
+      "supabase_tabelas": ["prontuarios", "prontuarios_anexos"]
+    },
+
+    {
+      "id": "M10",
+      "nome": "Pagamentos",
+      "descricao": "Pagamentos parciais ou totais de um atendimento",
+      "campos": {
+        "atendimento_id": "uuid FK",
+        "forma_pagamento": "enum: DINHEIRO | PIX | CARTAO_CREDITO | CARTAO_DEBITO | OUTROS",
+        "valor":          "currency, obrigatório",
+        "data_pagamento": "timestamp, default now()",
+        "observacoes":    "string"
+      },
+      "regras": [
+        "Soma dos pagamentos nunca pode exceder valor_final do atendimento",
+        "Exibir total pago, saldo restante e badge de status: Pago | Parcial | Pendente",
+        "Ao cancelar atendimento, apagar todos os registros de pagamento"
+      ],
+      "supabase_tabelas": ["pagamentos"]
+    },
+
+    {
+      "id": "M11",
+      "nome": "Desconto",
+      "descricao": "Pop-up de desconto acessível via ícone ao lado do valor no atendimento",
+      "campos": {
+        "valor_desconto":  "currency — validado contra perc_max_desconto do tratamento",
+        "responsavel":     "select de profissionais",
+        "motivo":          "textarea, obrigatório"
+      },
+      "regras": [
+        "Ícone de porcentagem/tag ao lado do valor do tratamento abre Modal de Desconto",
+        "Calcular automaticamente o percentual digitado e exibir preview do valor_final",
+        "Bloquear desconto acima do perc_max_desconto cadastrado no tratamento",
+        "Apenas disponível nos status ORCAMENTO e EM_ANDAMENTO"
+      ]
+    }
+  ],
+
+  "componentes_globais": {
+    "Modal": {
+      "descricao": "Modal customizado reutilizável com overlay, header, body, footer (Cancelar / Confirmar)",
+      "props": ["isOpen", "title", "onClose", "onConfirm", "children", "size: sm|md|lg"]
+    },
+    "ConfirmDialog": {
+      "descricao": "Especialização do Modal para confirmações destrutivas (cancelamento, exclusão)",
+      "props": ["mensagem", "onConfirm", "onCancel", "tipo: danger|warning"]
+    },
+    "Toast": {
+      "descricao": "Notificações flutuantes no canto superior direito",
+      "tipos": ["success", "error", "warning", "info"]
+    },
+    "MaskInput": {
+      "descricao": "Input com máscara configurável (CPF, CNPJ, CEP, Telefone)",
+      "props": ["mask", "value", "onChange", "label", "error"]
+    },
+    "Badge": {
+      "descricao": "Badge de status colorido para atendimentos",
+      "cores": {
+        "ORCAMENTO":    "#ccab63",
+        "EM_ANDAMENTO": "#2596be",
+        "FINALIZADO":   "#4caf50",
+        "CANCELADO":    "#e57373"
+      }
+    },
+    "CEPInput": {
+      "descricao": "Input de CEP com botão de busca automática via ViaCEP e preenchimento dos campos de endereço",
+      "api": "https://viacep.com.br/ws/{cep}/json/"
+    },
+    "Sidebar": {
+      "descricao": "Menu lateral responsivo colapsável com ícones e labels",
+      "itens": [
+        "Dashboard",
+        "Profissionais (admin only)",
+        "Clientes",
+        "Fornecedores",
+        "Produtos",
+        "Estoque",
+        "Tratamentos",
+        "Atendimentos"
+      ]
+    },
+    "Header": {
+      "descricao": "Barra superior com logotipo, nome do usuário logado, role badge e botão Sair"
+    }
+  },
+
+  "dados_mock": {
+    "arquivo": "src/data/mockData.js",
+    "instrucoes": "Exportar objetos separados: profissionais, clientes, fornecedores, produtos, movimentacoes, tratamentos, atendimentos, prontuarios, pagamentos. Usar arrays com IDs uuid fixos para permitir relacionamentos entre entidades.",
+    "usuario_admin_mock": {
+      "email": "admin@clinica.com",
+      "senha": "Admin@123",
+      "nome":  "Administrador",
+      "role":  "admin"
+    },
+    "usuario_profissional_mock": {
+      "email": "profissional@clinica.com",
+      "senha": "Prof@123",
+      "nome":  "Dra. Juliana Nardaci",
+      "role":  "profissional"
+    }
+  },
+
+  "supabase_schema": {
+    "nota": "DDL para referência futura — não executar agora, apenas documentar",
+    "tabelas": [
+      "profissionais (id, user_id, nome, cpf, data_nascimento, cep, logradouro, numero, complemento, bairro, cidade, uf, telefone, email, especialidade, ativo, created_at)",
+      "clientes (id, nome, cpf, data_nascimento, sexo, estado_civil, profissao, cep, logradouro, numero, complemento, bairro, cidade, uf, telefone, email, indicado_por, observacoes, ativo, created_at)",
+      "anamneses (id, cliente_id, nome_arquivo, data_adicao, url_arquivo, created_at)",
+      "fornecedores (id, tipo_pessoa, razao_social, nome_fantasia, cpf_cnpj, ie, cep, logradouro, numero, complemento, bairro, cidade, uf, contato, telefone, email, site, observacoes, ativo, created_at)",
+      "produtos (id, nome, marca, unidade, qtd_minima, qtd_maxima, fornecedor_id, ativo, created_at)",
+      "estoque_movimentacoes (id, produto_id, tipo, operacao, quantidade, valor_unitario, fornecedor_id, atendimento_id, profissional_id, data_movimentacao, observacoes, created_at)",
+      "tratamentos (id, nome, descricao, valor, perc_max_desconto, duracao_estimada, ativo, created_at)",
+      "atendimentos (id, cliente_id, tratamento_id, profissional_id, valor_tratamento, desconto_valor, desconto_responsavel, desconto_motivo, valor_final, status, data_inicio, data_fim, cancelamento_responsavel, cancelamento_motivo, data_cancelamento, created_at)",
+      "prontuarios (id, atendimento_id, data_registro, responsavel_id, descricao, created_at)",
+      "prontuarios_anexos (id, prontuario_id, nome_arquivo, data_upload, url, created_at)",
+      "pagamentos (id, atendimento_id, forma_pagamento, valor, data_pagamento, observacoes, created_at)"
+    ],
+    "rls": "Habilitar Row Level Security em todas as tabelas. Profissionais acessam apenas dados de sua clínica. Admin acessa tudo."
+  },
+
+  "ordem_de_desenvolvimento": [
+    "1. Scaffold do projeto Vite + React — instalar dependências",
+    "2. Configurar variáveis CSS globais, fontes e reset",
+    "3. Criar mockData.js com todos os relacionamentos",
+    "4. Implementar AuthContext + PrivateRoute",
+    "5. AuthLayout + páginas Login, EsqueciSenha, RedefinirSenha",
+    "6. MainLayout: Sidebar responsivo + Header",
+    "7. Dashboard com cards de resumo",
+    "8. Componentes globais: Modal, ConfirmDialog, Toast, Badge, MaskInput, CEPInput",
+    "9. M02 Profissionais (CRUD completo)",
+    "10. M03 Clientes (CRUD + abas Anamneses + Atendimentos)",
+    "11. M04 Fornecedores (CRUD + máscara dinâmica PF/PJ)",
+    "12. M05 Produtos (CRUD)",
+    "13. M06 Estoque (movimentações)",
+    "14. M07 Tratamentos (CRUD)",
+    "15. M08–M11 Atendimentos com abas (Prontuários, Produtos, Pagamentos, Desconto, Cancelamento)"
+  ],
+
+  "instrucoes_para_ia": {
+    "geral": [
+      "Gerar TODOS os arquivos completos — nenhum arquivo deve ter '// TODO' ou placeholder vazio",
+      "CSS exclusivamente com variáveis definidas em :root — proibido usar cores hardcoded",
+      "Todos os formulários devem ter validação client-side antes de qualquer operação",
+      "Modais de confirmação NUNCA devem usar window.alert, window.confirm ou window.prompt",
+      "Busca de CEP é assíncrona — exibir spinner no campo durante a busca",
+      "Máscaras de CPF, CNPJ, CEP e telefone devem funcionar enquanto o usuário digita",
+      "Responsividade: sidebar colapsa em telas < 768px, tabelas viram cards em mobile",
+      "Ao simular operações assíncronas com mock, usar setTimeout de 300-600ms para simular latência"
+    ],
+    "qualidade_visual": [
+      "Seguir paleta de cores exatamente como definida",
+      "Nunca usar cores fora da paleta sem justificativa",
+      "Componentes devem ter hover states e transições suaves (0.2s ease)",
+      "Tabelas alternadas com fundo levemente diferente para facilitar leitura",
+      "Status badges sempre com cor semântica da paleta"
+    ],
+    "entrega": [
+      "Entregar estrutura de pastas completa conforme definida em 'estrutura_pastas'",
+      "package.json com todas as dependências necessárias",
+      "Arquivo .env.example com variáveis de ambiente do Supabase documentadas",
+      "README.md com instruções de instalação e configuração"
+    ]
+  },
+
+  "env_example": {
+    "VITE_SUPABASE_URL":     "https://SEU_PROJETO.supabase.co",
+    "VITE_SUPABASE_ANON_KEY":"SUA_ANON_KEY_AQUI"
+  },
+
+  "git": {
+    "repositorio":   "https://github.com/inovaflowtecsys-afk/junardaci",
+    "branch_padrao": "main",
+    "gitignore": ["node_modules", "dist", ".env", ".env.local"],
+    "commit_inicial": "chore: scaffold inicial + prompt de desenvolvimento"
+  }
+}

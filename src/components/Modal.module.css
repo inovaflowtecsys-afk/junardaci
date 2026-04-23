@@ -1,0 +1,116 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(18, 18, 18, 0.4);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: white;
+  border-radius: 32px;
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  animation: modalScale 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScale {
+  from { opacity: 0; transform: scale(0.95) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.sm { max-width: 440px; }
+.md { max-width: 680px; }
+.lg { max-width: 1000px; }
+
+.header {
+  padding: 32px 40px;
+  border-bottom: 1px solid var(--color-bg-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h2 {
+  font-size: 1.8rem;
+  color: var(--color-dark);
+  letter-spacing: -0.5px;
+}
+
+.closeBtn {
+  color: var(--color-text-light);
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-3);
+  transition: var(--transition);
+}
+
+.closeBtn:hover {
+  background: var(--color-error);
+  color: white;
+}
+
+.body {
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.footer {
+  padding: 32px 40px;
+  border-top: 1px solid var(--color-bg-3);
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.cancelBtn {
+  padding: 14px 28px;
+  border-radius: 14px;
+  font-weight: 700;
+  color: var(--color-text-light);
+  background: var(--color-bg-3);
+  transition: var(--transition);
+}
+
+.cancelBtn:hover {
+  background: var(--color-dark);
+  color: white;
+}
+
+.confirmBtn {
+  padding: 14px 32px;
+  border-radius: 14px;
+  font-weight: 800;
+  color: var(--color-dark);
+  background: var(--grad-primary);
+  box-shadow: 0 8px 16px rgba(204, 171, 99, 0.2);
+  transition: var(--transition);
+}
+
+.confirmBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(204, 171, 99, 0.3);
+}
+
+.danger { 
+  background: var(--color-error); 
+  color: white;
+  box-shadow: 0 8px 16px rgba(174, 32, 18, 0.2);
+}
+
+.danger:hover { background: #d00000; }
