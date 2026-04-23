@@ -1,3 +1,17 @@
+.footerVersion {
+  width: 100%;
+  text-align: center;
+  font-size: 0.92rem;
+  color: #b6a98c;
+  background: transparent;
+  padding: 12px 0 8px 0;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
+}
 .layout {
   display: flex;
   min-height: 100vh;

@@ -1,3 +1,4 @@
+const AlterarSenha = lazy(() => import('../pages/auth/AlterarSenha'));
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -115,6 +116,7 @@ const AppRoutes = () => {
     <Suspense fallback={<div style={routeFallbackStyle}>Carregando...</div>}>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/alterar-senha" element={<AlterarSenha />} />
         <Route path="/esqueci-senha" element={<EsqueciSenha />} />
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
 

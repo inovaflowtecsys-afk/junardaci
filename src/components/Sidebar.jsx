@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -10,10 +10,12 @@ import {
   ClipboardList,
   ChevronLeft,
   ChevronRight,
-  Settings2
+  Settings2,
+  KeyRound
 } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { useAuth } from '../contexts/AuthContext';
+import AlterarSenha from '../pages/auth/AlterarSenha';
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
   const { user } = useAuth();
@@ -28,7 +30,15 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
     { path: '/atendimentos', icon: <ClipboardList size={22} />, label: 'Atendimentos' },
     { path: '/profissionais', icon: <UserRound size={22} />, label: 'Profissionais', adminOnly: true },
     { path: '/gestao', icon: <Settings2 size={22} />, label: 'Gestão', adminOnly: true },
+    { path: '/alterar-senha', icon: <KeyRound size={22} />, label: 'Alterar Senha', adminOnly: false, bottom: true },
   ];
+
+  const [senhaModalOpen, setSenhaModalOpen] = useState(false);
+
+  const handleSenhaClick = (e) => {
+    e.preventDefault();
+    setSenhaModalOpen(true);
+  };
 
   return (
     <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
@@ -47,9 +57,8 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       </div>
 
       <nav className={styles.nav}>
-        {menuItems.map((item) => {
+        {menuItems.filter(item => !item.bottom).map((item) => {
           if (item.adminOnly && !isAdmin) return null;
-          
           return (
             <NavLink 
               key={item.path} 
@@ -62,6 +71,26 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
           );
         })}
       </nav>
+
+      {/* Item de menu fixo no rodapé do sidebar */}
+      <div className={styles.sidebarBottomMenu}>
+        {menuItems.filter(item => item.bottom).map((item) => (
+          <a
+            key={item.path}
+            href="#"
+            onClick={handleSenhaClick}
+            className={`${styles.navItem} ${styles.leftAlign}`}
+            style={{textDecoration: 'none'}}
+          >
+            <span className={styles.icon}>{item.icon}</span>
+            {!collapsed && <span className={styles.label}>{item.label}</span>}
+          </a>
+        ))}
+        <AlterarSenha isOpen={senhaModalOpen} onClose={() => setSenhaModalOpen(false)} />
+      </div>
+      <div className={styles.sidebarFooter}>
+        Inovaflowtec - Versão 1.0.0 - 23/04/2026
+      </div>
     </aside>
   );
 };

@@ -68,6 +68,7 @@ const MainLayout = () => {
         <main className={styles.content}>
           <Outlet />
         </main>
+        {/* Rodapé de versão removido daqui, mantido apenas no Sidebar */}
       </div>
     </div>
   );
