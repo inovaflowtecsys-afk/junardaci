@@ -1,3 +1,4 @@
+// Removido: hook fora do componente
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Save, XCircle, Edit2 } from 'lucide-react';
@@ -33,6 +34,7 @@ const emptyForm = {
 };
 
 const FormCliente = () => {
+  const [cpfCheckModal, setCpfCheckModal] = useState({ open: false, clienteId: null });
   const { id } = useParams();
   const navigate = useNavigate();
   const { handleSave, confirmOpen, handleConfirm, handleStay, toasts } = useSaveConfirm('/clientes');
@@ -98,7 +100,7 @@ const FormCliente = () => {
           email: found.email || '',
           telefone: found.telefone || '',
           profissao: found.profissao || '',
-          cep: found.cep || '',
+          cep: (found.cep || '').replace(/[^0-9]/g, '').replace(/(\d{5})(\d{3})/, '$1-$2').slice(0, 9),
           logradouro: found.logradouro || '',
           numero: found.numero || '',
           complemento: found.complemento || '',
@@ -169,18 +171,49 @@ const FormCliente = () => {
     };
   }, [id]);
 
-  const handleField = (field) => (event) => {
+  const handleField = (field) => async (event) => {
     const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
     setFormData((prev) => ({ ...prev, [field]: value }));
+
+    // Validação de CPF único ao digitar
+    if (field === 'cpf') {
+      const cpfValue = value.replace(/\D/g, '');
+      if (cpfValue.length === 11) {
+        // Busca cliente com o mesmo CPF (exceto o atual)
+        const { data: clientes, error } = await supabase
+          .from('clientes')
+          .select('id, nome')
+          .eq('cpf', event.target.value)
+          .neq('id', id || null);
+        if (!error && clientes && clientes.length > 0) {
+          setCpfCheckModal({ open: true, clienteId: clientes[0].id });
+        }
+      }
+    }
   };
 
   const handleSaveCliente = async () => {
     setSaving(true);
     setFormError('');
-
     try {
-      if (!formData.nome.trim()) throw new Error('Informe o nome do cliente.');
+      // Validação obrigatória
       if (!formData.cpf.trim()) throw new Error('Informe o CPF do cliente.');
+      if (!formData.nome.trim()) throw new Error('Informe o nome do cliente.');
+      if (!formData.cep.trim()) throw new Error('Informe o CEP do cliente.');
+      if (!endereco.numero.trim()) throw new Error('Informe o número do endereço.');
+      if (!formData.telefone.trim()) throw new Error('Informe o telefone do cliente.');
+      if (!formData.data_nascimento) throw new Error('Informe a data de nascimento do cliente.');
+
+      // Validação de CPF único
+      const { data: clientesCpf, error: errorCpf } = await supabase
+        .from('clientes')
+        .select('id')
+        .eq('cpf', formData.cpf)
+        .neq('id', id || null);
+      if (!errorCpf && clientesCpf && clientesCpf.length > 0) {
+        setCpfCheckModal({ open: true, clienteId: clientesCpf[0].id });
+        throw new Error('Já existe um cliente com este CPF.');
+      }
 
       const payload = {
         nome: formData.nome.trim(),
@@ -277,29 +310,33 @@ const FormCliente = () => {
         <div className={styles.grid}>
           <div className={styles.col3}>
             <MaskInput
-              label="CPF"
+              label="CPF *"
               mask="000.000.000-00"
               placeholder="000.000.000-00"
               value={formData.cpf}
               onAccept={(value) => setFormData((prev) => ({ ...prev, cpf: value }))}
+              onChange={handleField('cpf')}
+              required
             />
           </div>
           <div className={styles.col6}>
-            <Input label="Nome Completo" placeholder="Nome do cliente" value={formData.nome} onChange={handleField('nome')} />
+            <Input label="Nome Completo *" placeholder="Nome do cliente" value={formData.nome} onChange={handleField('nome')} required />
           </div>
           <div className={styles.col3}>
-            <Input label="Nascimento" type="date" value={formData.data_nascimento} onChange={handleField('data_nascimento')} />
+            <Input label="Nascimento *" type="date" value={formData.data_nascimento} onChange={handleField('data_nascimento')} required />
           </div>
           <div className={styles.col4}>
             <Input label="E-mail" type="email" placeholder="email@exemplo.com" value={formData.email} onChange={handleField('email')} />
           </div>
           <div className={styles.col4}>
             <MaskInput
-              label="Telefone"
+              label="Telefone *"
               mask="(00) 00000-0000"
               placeholder="(00) 00000-0000"
               value={formData.telefone}
               onAccept={(value) => setFormData((prev) => ({ ...prev, telefone: value }))}
+              onChange={handleField('telefone')}
+              required
             />
           </div>
           <div className={styles.col4}>
@@ -311,13 +348,22 @@ const FormCliente = () => {
         <div className={styles.grid}>
           <div className={styles.col2}>
             <MaskInput
-              label={cepLoading ? 'CEP (buscando...)' : 'CEP'}
+              label={cepLoading ? 'CEP (buscando...) *' : 'CEP *'}
               mask="00000-000"
               placeholder="00000-000"
               error={cepError}
               value={formData.cep}
-              onChange={(e) => setFormData((p) => ({ ...p, cep: e.target.value }))}
-              onAccept={(value) => buscarCep(value)}
+              onChange={(e) => {
+                // Garante apenas números e hífen, e máximo 9 caracteres
+                let v = e.target.value.replace(/[^0-9-]/g, '').slice(0, 9);
+                setFormData((p) => ({ ...p, cep: v }));
+              }}
+              onAccept={(value) => {
+                // Garante apenas números e hífen, e máximo 9 caracteres
+                let v = (value || '').replace(/[^0-9-]/g, '').slice(0, 9);
+                buscarCep(v);
+              }}
+              required
             />
           </div>
           <div className={styles.col5}>
@@ -333,13 +379,14 @@ const FormCliente = () => {
           </div>
           <div className={styles.col2}>
             <Input
-              label="Número"
+              label="Número *"
               placeholder="123"
               value={endereco.numero}
               onChange={(e) => {
                 setEndereco((p) => ({ ...p, numero: e.target.value }));
                 setFormData((p) => ({ ...p, numero: e.target.value }));
               }}
+              required
             />
           </div>
           <div className={styles.col3}>
@@ -503,6 +550,22 @@ const FormCliente = () => {
       size="sm"
     >
       <p>Deseja realmente excluir este cliente?</p>
+    </Modal>
+    <Modal
+      isOpen={cpfCheckModal.open}
+      title="CPF já cadastrado"
+      onClose={() => setCpfCheckModal({ open: false, clienteId: null })}
+      onConfirm={() => {
+        setCpfCheckModal({ open: false, clienteId: null });
+        if (cpfCheckModal.clienteId) {
+          navigate(`/clientes/${cpfCheckModal.clienteId}`);
+        }
+      }}
+      confirmText="Abrir cadastro"
+      cancelText="Cancelar"
+      size="sm"
+    >
+      <p>Já existe um cliente cadastrado com este CPF. Deseja abrir o cadastro deste cliente?</p>
     </Modal>
     <Toast toasts={toasts} />
     </>

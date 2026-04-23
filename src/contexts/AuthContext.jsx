@@ -78,7 +78,7 @@ const mapAuthUser = (authUser, profile) => {
 
 const ENABLE_PROFILE_LOOKUP = true;
 
-const fetchProfileByAuthUserId = async (authUserId, timeoutMs = 4000) => {
+const fetchProfileByAuthUserId = async (authUserId, timeoutMs = 10000) => {
   if (!ENABLE_PROFILE_LOOKUP || !supabase || !authUserId) {
     return { profile: null, profileError: null };
   }
@@ -108,8 +108,8 @@ const fetchProfileByAuthUserId = async (authUserId, timeoutMs = 4000) => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
+    // Nunca use localStorage se Supabase está ativo
     if (hasSupabaseConfig) return null;
-
     const savedUser = localStorage.getItem('@Clinic:user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
@@ -247,6 +247,7 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+
   const login = async (email, password) => {
     console.info('[AUTH_DEBUG] login:start', { email });
     setLoading(true);
@@ -296,6 +297,7 @@ export const AuthProvider = ({ children }) => {
           setAuthError(profileErr?.message || '');
         });
 
+      // Nunca salve no localStorage se Supabase está ativo
       return nextUser;
     }
 

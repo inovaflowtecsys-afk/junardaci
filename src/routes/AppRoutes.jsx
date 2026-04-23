@@ -102,19 +102,27 @@ const AdminRoute = ({ children }) => {
 };
 
 const AppRoutes = () => {
+  const { signed, loading, logout } = useAuth();
+
+  // Força logout ao acessar a raiz se não autenticado
+  React.useEffect(() => {
+    if (!signed && !loading) {
+      logout && typeof logout === 'function' && logout();
+    }
+  }, [signed, loading, logout]);
+
   return (
     <Suspense fallback={<div style={routeFallbackStyle}>Carregando...</div>}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/esqueci-senha" element={<EsqueciSenha />} />
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
-        
-        <Route path="/" element={
-          <PrivateRoute>
-            <MainLayout />
-          </PrivateRoute>
-        }>
-          <Route index element={<Dashboard />} />
+
+        {/* Redireciona para login se não autenticado ao acessar a raiz ou index */}
+        <Route path="/" element={<PrivateRoute><MainLayout /></PrivateRoute>}>
+          <Route index element={
+            !signed && !loading ? <Navigate to="/login" replace /> : <Dashboard />
+          } />
           <Route path="clientes" element={<ListaClientes />} />
           <Route path="clientes/novo" element={<FormCliente />} />
           <Route path="clientes/:id" element={<FormCliente />} />
@@ -139,7 +147,7 @@ const AppRoutes = () => {
           {/* Add more private routes here */}
         </Route>
 
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Suspense>
   );
