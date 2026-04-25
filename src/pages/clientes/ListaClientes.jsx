@@ -22,7 +22,10 @@ const ListaClientes = () => {
         const data = await fetchRows('clientes', { orderBy: 'nome' });
         if (mounted) setClientes(data);
       } catch (err) {
-        if (mounted) setError(err?.message || 'Nao foi possivel carregar os clientes.');
+        // Log detalhado no console
+        // eslint-disable-next-line no-console
+        console.error('Erro ao carregar clientes:', err);
+        if (mounted) setError((err && err.message ? err.message : 'Nao foi possivel carregar os clientes.') + (err && err.code ? ` [${err.code}]` : ''));
       } finally {
         if (mounted) setLoading(false);
       }

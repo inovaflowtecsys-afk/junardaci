@@ -11,6 +11,7 @@ import Modal from '../../components/Modal';
 import Toast from '../../components/Toast';
 import { supabase } from '../../lib/supabaseClient';
 import { fetchRows } from '../../lib/supabaseCrud';
+import { createClient } from '@supabase/supabase-js';
 
 const emptyEndereco = {
   logradouro: '',
@@ -91,13 +92,23 @@ const FormProfissional = () => {
           fetchRows('especialidades', { orderBy: 'nome' }),
         ]);
 
+        // Logs para depuração
+        // eslint-disable-next-line no-console
+        console.log('CARGOS:', cargosData);
+        // eslint-disable-next-line no-console
+        console.log('SETORES:', setoresData);
+        // eslint-disable-next-line no-console
+        console.log('ESPECIALIDADES:', especialidadesData);
+
         if (!mounted) return;
 
         setCargos(cargosData);
         setSetores(setoresData);
         setEspecialidades(especialidadesData);
       } catch (err) {
-        if (mounted) setError(err?.message || 'Nao foi possivel carregar os dados iniciais.');
+        // eslint-disable-next-line no-console
+        console.error('Erro ao carregar dados iniciais:', err);
+        if (mounted) setError((err && err.message ? err.message : 'Nao foi possivel carregar os dados iniciais.') + (err && err.code ? ` [${err.code}]` : ''));
       }
     };
 
@@ -222,19 +233,27 @@ const FormProfissional = () => {
     setError('');
 
     try {
-      if (isMedico && !formData.especialidade_id) {
-        throw new Error('Para cargo Medico, a especialidade é obrigatoria.');
+      // Validação obrigatória dos campos
+      if (!formData.nome.trim()) throw new Error('Nome é obrigatório.');
+      if (!formData.cpf) throw new Error('CPF é obrigatório.');
+      if (!formData.data_nascimento) throw new Error('Data de nascimento é obrigatória.');
+      if (!formData.email) throw new Error('E-mail é obrigatório.');
+      if (!formData.cargo_id || formData.cargo_id === "") throw new Error('Cargo é obrigatório.');
+      if (!formData.setor_id || formData.setor_id === "") throw new Error('Setor é obrigatório.');
+      if (!formData.telefone) throw new Error('Telefone é obrigatório.');
+      if (isMedico && (!formData.especialidade_id || formData.especialidade_id === "")) {
+        throw new Error('Para cargo Médico, a especialidade é obrigatória.');
       }
 
       const payload = {
         nome: formData.nome.trim(),
-        cpf: formData.cpf || null,
-        data_nascimento: formData.data_nascimento || null,
-        email: formData.email || null,
-        telefone: formData.telefone || null,
+        cpf: formData.cpf || '',
+        data_nascimento: formData.data_nascimento || '',
+        email: formData.email || '',
+        telefone: formData.telefone || '',
         cargo_id: formData.cargo_id || null,
         setor_id: formData.setor_id || null,
-        especialidade_id: formData.especialidade_id || null,
+        especialidade_id: isMedico ? (formData.especialidade_id || null) : null,
         role: formData.role,
         autoriza_cortesia: Boolean(formData.autoriza_cortesia),
         ativo: Boolean(formData.ativo),
@@ -258,9 +277,46 @@ const FormProfissional = () => {
 
         if (updateError) throw updateError;
       } else {
+        // 1. Cria usuário no Supabase Auth usando um cliente secundário para não deslogar o admin
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const supabaseSignUpClient = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            storageKey: 'sb-temp-auth-token',
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false
+          }
+        });
+
+        const { data: authData, error: authError } = await supabaseSignUpClient.auth.signUp({
+          email: formData.email,
+          password: '0102ju',
+        });
+        if (authError || !authData?.user?.id) {
+          let msg = 'Erro ao criar usuário no Auth.';
+          // Tratamento especial para erro 429 (rate limit)
+          if (authError?.status === 429 || (authError?.message && authError.message.includes('rate limit'))) {
+            msg = 'Limite de cadastros atingido. Aguarde alguns minutos antes de tentar novamente.';
+          } else if (authError?.message) {
+            msg += ' ' + authError.message;
+          } else if (authError) {
+            msg += ' ' + JSON.stringify(authError);
+          }
+          // Exibe erro detalhado no console
+          // eslint-disable-next-line no-console
+          console.error('Erro detalhado Supabase Auth:', authError);
+          setError(msg);
+          addToast(msg, 'error');
+          setSaving(false);
+          return;
+        }
+        const userId = authData.user.id;
+
+        // 2. Insere na tabela profissionais, vinculando ao auth_user_id do Auth
         const { data: inserted, error: insertError } = await supabase
           .from('profissionais')
-          .insert(payload)
+          .insert({ ...payload, auth_user_id: userId })
           .select('id')
           .single();
 
@@ -401,18 +457,18 @@ const FormProfissional = () => {
             </div>
             <div className={`${styles.col4} ${styles.fieldGroup}`}>
               <label className={styles.fieldLabel}>Cargo</label>
-              <select className={styles.fieldSelect} value={formData.cargo_id} onChange={handleCargoChange}>
+              <select className={styles.fieldSelect} value={formData.cargo_id || ""} onChange={handleCargoChange} required>
                 <option value="">Selecione...</option>
-                {cargos.filter((c) => c.ativo).map((c) => (
+                {cargos.map((c) => (
                   <option key={c.id} value={c.id}>{c.nome}</option>
                 ))}
               </select>
             </div>
             <div className={`${styles.col4} ${styles.fieldGroup}`}>
               <label className={styles.fieldLabel}>Setor</label>
-              <select className={styles.fieldSelect} value={formData.setor_id} onChange={handleField('setor_id')}>
+              <select className={styles.fieldSelect} value={formData.setor_id || ""} onChange={handleField('setor_id')} required>
                 <option value="">Selecione...</option>
-                {setores.filter((s) => s.ativo).map((s) => (
+                {setores.map((s) => (
                   <option key={s.id} value={s.id}>{s.nome}</option>
                 ))}
               </select>
@@ -431,7 +487,7 @@ const FormProfissional = () => {
               <label className={styles.fieldLabel}>Especialidade {isMedico ? '*' : '(opcional)'}</label>
               <select
                 className={styles.fieldSelect}
-                value={formData.especialidade_id}
+                value={formData.especialidade_id || ""}
                 onChange={handleField('especialidade_id')}
                 disabled={!isMedico}
                 required={isMedico}

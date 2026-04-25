@@ -11,6 +11,10 @@ export const fetchRows = async (table, options = {}) => {
 
   let query = supabase.from(table).select(options.select || '*');
 
+  if (options.eq) {
+    query = query.eq(options.eq.column, options.eq.value);
+  }
+
   if (options.orderBy) {
     query = query.order(options.orderBy, { ascending: options.ascending ?? true });
   }

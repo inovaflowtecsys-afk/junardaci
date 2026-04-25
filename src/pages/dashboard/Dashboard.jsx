@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { CalendarCheck2, ClipboardList, UserRound } from 'lucide-react';
 import styles from './Dashboard.module.css';
 import { fetchRows } from '../../lib/supabaseCrud';
+import { useAuth } from '../../contexts/AuthContext';
 
 const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
@@ -44,6 +45,7 @@ const formatDateTime = (value) => {
 };
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [rulesError, setRulesError] = useState('');
   const [clientes, setClientes] = useState([]);
@@ -59,6 +61,11 @@ const Dashboard = () => {
       setRulesError('');
 
       try {
+        const atendimentosOptions = { orderBy: 'created_at', ascending: false };
+        if (user && !user.isAdmin && user.id) {
+          atendimentosOptions.eq = { column: 'profissional_id', value: user.id };
+        }
+
         const [
           clientesData,
           tratamentosData,
@@ -68,7 +75,7 @@ const Dashboard = () => {
           fetchRows('clientes', { orderBy: 'nome' }),
           fetchRows('tratamentos', { orderBy: 'nome' }),
           fetchRows('profissionais', { orderBy: 'nome' }),
-          fetchRows('atendimentos', { orderBy: 'created_at', ascending: false }),
+          fetchRows('atendimentos', atendimentosOptions),
         ]);
 
         if (!mounted) return;

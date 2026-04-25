@@ -103,14 +103,7 @@ const AdminRoute = ({ children }) => {
 };
 
 const AppRoutes = () => {
-  const { signed, loading, logout } = useAuth();
-
-  // Força logout ao acessar a raiz se não autenticado
-  React.useEffect(() => {
-    if (!signed && !loading) {
-      logout && typeof logout === 'function' && logout();
-    }
-  }, [signed, loading, logout]);
+  const { signed, loading } = useAuth();
 
   return (
     <Suspense fallback={<div style={routeFallbackStyle}>Carregando...</div>}>

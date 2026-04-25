@@ -28,7 +28,10 @@ const ListaProfissionais = () => {
         });
         if (mounted) setProfissionais(data);
       } catch (err) {
-        if (mounted) setError(err?.message || 'Nao foi possivel carregar os profissionais.');
+        // Log detalhado no console
+        // eslint-disable-next-line no-console
+        console.error('Erro ao carregar profissionais:', err);
+        if (mounted) setError((err && err.message ? err.message : 'Nao foi possivel carregar os profissionais.') + (err && err.code ? ` [${err.code}]` : ''));
       } finally {
         if (mounted) setLoading(false);
       }

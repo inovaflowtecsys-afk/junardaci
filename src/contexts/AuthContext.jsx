@@ -78,31 +78,31 @@ const mapAuthUser = (authUser, profile) => {
 
 const ENABLE_PROFILE_LOOKUP = true;
 
-const fetchProfileByAuthUserId = async (authUserId, timeoutMs = 10000) => {
+const fetchProfileByAuthUserId = async (authUserId, _timeoutMs = 10000, maxRetries = 3, retryDelay = 1000) => {
   if (!ENABLE_PROFILE_LOOKUP || !supabase || !authUserId) {
     return { profile: null, profileError: null };
   }
 
-  const timeoutPromise = new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        data: null,
-        error: new Error('Timeout ao carregar perfil em profissionais.'),
-      });
-    }, timeoutMs);
-  });
+  let lastError = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const { data, error } = await supabase
+      .from('profissionais')
+      .select('id,nome,email,role,avatar_url,auth_user_id,setores(nome)')
+      .eq('auth_user_id', authUserId)
+      .maybeSingle();
 
-  const queryPromise = supabase
-    .from('profissionais')
-    .select('id,nome,email,role,avatar_url,auth_user_id,setores(nome)')
-    .eq('auth_user_id', authUserId)
-    .maybeSingle();
-
-  const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
-
+    if (data && !error) {
+      return { profile: data, profileError: null };
+    }
+    lastError = error;
+    // Aguarda antes de tentar novamente
+    if (attempt < maxRetries) {
+      await new Promise((res) => setTimeout(res, retryDelay));
+    }
+  }
   return {
-    profile: data ?? null,
-    profileError: error ?? null,
+    profile: null,
+    profileError: lastError ?? new Error('Não foi possível carregar o perfil do profissional.'),
   };
 };
 
@@ -110,11 +110,24 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     // Nunca use localStorage se Supabase está ativo
     if (hasSupabaseConfig) return null;
-    const savedUser = localStorage.getItem('@Clinic:user');
+    const savedUser = sessionStorage.getItem('@Clinic:user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
   const [loading, setLoading] = useState(hasSupabaseConfig);
   const [authError, setAuthError] = useState('');
+  const bootstrappingRef = React.useRef(false);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        console.info('[AUTH_DEBUG] visibilitychange:hidden, forcing logout');
+        logout();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -139,18 +152,29 @@ export const AuthProvider = ({ children }) => {
     if (hasSupabaseConfig) {
       bootstrapTimeoutId = setTimeout(() => {
         if (!mounted) return;
-        setAuthError('A validação da sessão demorou além do esperado. Ele não prosseguiu para a tela de login. Recarregue a página ou revise a configuração do Supabase.');
+        // Se ainda estiver carregando apos 15 segundos, tenta liberar a trava
+        setAuthError('A validação da sessão está demorando. Isso pode ser um conflito de abas abertas.');
         setLoading(false);
-      }, 10000);
+      }, 15000);
     }
 
     const hydrateSupabaseUser = async () => {
+      if (bootstrappingRef.current) return;
+      bootstrappingRef.current = true;
+
       try {
         logAuthDebug('bootstrap:start', { hasSupabaseConfig, hasClient: Boolean(supabase) });
         setAuthError('');
-        const { data } = await supabase.auth.getSession();
+        
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.warn('[AUTH_DEBUG] bootstrap:session_error', sessionError);
+          // Nao limpa tudo aqui, apenas registra o erro
+        }
+
         const sessionUser = data?.session?.user;
-        logAuthDebug('bootstrap:session', { hasSessionUser: Boolean(sessionUser), sessionUserId: sessionUser?.id || null });
+        logAuthDebug('bootstrap:session', { hasSessionUser: Boolean(sessionUser) });
 
         if (!mounted) return;
 
@@ -160,16 +184,18 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
-        if (!mounted) return;
-
+        // Define usuario basico imediatamente para liberar a tela
         setUser(mapAuthUser(sessionUser, null));
         finishBootstrap();
 
+        // Busca o perfil em segundo plano para nao travar o app
         const { profile, profileError } = await fetchProfileByAuthUserId(sessionUser.id);
         if (!mounted) return;
 
-        setUser(mapAuthUser(sessionUser, profile));
-        setAuthError(profileError?.message || '');
+        if (profile) {
+          setUser(mapAuthUser(sessionUser, profile));
+        }
+        
         if (profileError) {
           console.error('[AUTH_DEBUG] bootstrap:profile_error', profileError);
         }
@@ -177,9 +203,10 @@ export const AuthProvider = ({ children }) => {
         if (!mounted) return;
         console.error('[AUTH_DEBUG] bootstrap:catch', error);
         setUser(null);
-        setAuthError(error?.message || 'Nao foi possivel validar sua autenticacao inicial. Ele não prosseguiu para a tela de login.');
+        setAuthError('Falha na validação da sessão. Tente fazer login novamente.');
       } finally {
         finishBootstrap();
+        bootstrappingRef.current = false;
         logAuthDebug('bootstrap:finish');
       }
     };
@@ -253,9 +280,12 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
 
     if (hasSupabaseConfig && supabase) {
+      const trimmedEmail = email.trim();
+      const trimmedPassword = password.trim();
+      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: trimmedEmail,
+        password: trimmedPassword,
       });
 
       if (error) {
@@ -307,7 +337,7 @@ export const AuthProvider = ({ children }) => {
 
         if (userData) {
           setUser(userData);
-          localStorage.setItem('@Clinic:user', JSON.stringify(userData));
+          sessionStorage.setItem('@Clinic:user', JSON.stringify(userData));
           resolve(userData);
         } else {
           reject(new Error('Credenciais inválidas'));
@@ -324,7 +354,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     setUser(null);
-    localStorage.removeItem('@Clinic:user');
+    sessionStorage.removeItem('@Clinic:user');
   };
 
   const value = {
