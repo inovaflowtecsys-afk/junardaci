@@ -118,18 +118,6 @@ export const AuthProvider = ({ children }) => {
   const bootstrappingRef = React.useRef(false);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        console.info('[AUTH_DEBUG] visibilitychange:hidden, forcing logout');
-        logout();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
-
-  useEffect(() => {
     let mounted = true;
     let bootstrapTimeoutId;
 
