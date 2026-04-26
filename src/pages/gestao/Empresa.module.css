@@ -1,0 +1,138 @@
+@import "../../styles/forms.module.css";
+
+.documentSection {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #dcc8a1;
+}
+
+.documentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.documentHeader h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #3d3022;
+}
+
+.uploadBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #fff8ef;
+  border: 1px solid #dcc8a1;
+  border-radius: 8px;
+  color: #8a7452;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.uploadBtn:hover {
+  background: #f4e8cf;
+  border-color: #c9a876;
+}
+
+.documentList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.documentCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid #e7d7b8;
+  border-radius: 12px;
+  transition: 0.2s ease;
+}
+
+.documentCard:hover {
+  box-shadow: 0 4px 12px rgba(223, 198, 150, 0.15);
+  border-color: #dcc8a1;
+}
+
+.docInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.docIcon {
+  color: #c9a876;
+  flex-shrink: 0;
+}
+
+.docText {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.docName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #3d3022;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.docMeta {
+  font-size: 0.75rem;
+  color: #8a7452;
+}
+
+.docActions {
+  display: flex;
+  gap: 4px;
+}
+
+.docActionBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #8a7452;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.docActionBtn:hover {
+  background: #fdf5e8;
+  color: #3d3022;
+}
+
+.deleteBtn {
+  color: #c62828;
+}
+
+.deleteBtn:hover {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.emptyDocs {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 32px;
+  background: #fffcf8;
+  border: 1px dashed #dcc8a1;
+  border-radius: 12px;
+  color: #8a7452;
+  font-size: 0.9rem;
+}

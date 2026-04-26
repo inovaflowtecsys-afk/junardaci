@@ -3,7 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Weather from '../components/Weather';
 import styles from './MainLayout.module.css';
-import { Bell, LogOut, LayoutDashboard, UserRound, Users, Truck, Package, Sparkles, ClipboardList, Settings2 } from 'lucide-react';
+import { Bell, LogOut, LayoutDashboard, UserRound, Users, Truck, Package, Sparkles, ClipboardList, Settings2, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const MODULE_MAP = [
@@ -16,6 +16,7 @@ const MODULE_MAP = [
   { match: (p) => p.startsWith('/tratamentos'),   icon: <Sparkles size={22} />,        label: 'Tratamentos' },
   { match: (p) => p.startsWith('/atendimentos'),  icon: <ClipboardList size={22} />,   label: 'Atendimentos' },
   { match: (p) => p.startsWith('/gestao'),         icon: <Settings2 size={22} />,       label: 'Gestão' },
+  { match: (p) => p.startsWith('/empresa'),        icon: <Building2 size={22} />,       label: 'Empresa' },
 ];
 
 const MainLayout = () => {

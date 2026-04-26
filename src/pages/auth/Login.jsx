@@ -64,10 +64,10 @@ const Login = () => {
               <input 
                 type="email" 
                 id="email"
-                placeholder="exemplo@clinica.com"
+                placeholder=""
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
+                autoComplete="off"
                 required
               />
             </div>
@@ -80,10 +80,10 @@ const Login = () => {
               <input 
                 type={showPassword ? "text" : "password"} 
                 id="password"
-                placeholder="••••••••"
+                placeholder=""
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
+                autoComplete="new-password"
                 required
               />
               <button 

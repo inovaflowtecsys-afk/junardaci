@@ -39,8 +39,6 @@ const formatDateTime = (value) => {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
   }).format(date);
 };
 
@@ -397,7 +395,7 @@ const Dashboard = () => {
                         <th>Tratamento</th>
                         <th>Profissional</th>
                         <th>Status</th>
-                        <th>Data/Hora</th>
+                        <th>Data</th>
                       </tr>
                     </thead>
                     <tbody>

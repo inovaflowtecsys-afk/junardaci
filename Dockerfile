@@ -7,6 +7,9 @@ COPY . .
 RUN npm run build
 
 FROM nginx:alpine
+# Copia o build do Vite
 COPY --from=build /app/dist /usr/share/nginx/html
-EXPOSE 5173
+# Copia a configuração do Nginx para suportar React Router
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

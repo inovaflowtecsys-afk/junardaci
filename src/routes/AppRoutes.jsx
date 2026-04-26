@@ -27,6 +27,7 @@ const FormMovimentacao = lazy(() => import('../pages/estoque/FormMovimentacao'))
 const ListaAtendimentos = lazy(() => import('../pages/atendimentos/ListaAtendimentos'));
 const FormAtendimento = lazy(() => import('../pages/atendimentos/FormAtendimento'));
 const GestaoAuxiliares = lazy(() => import('../pages/gestao/GestaoAuxiliares'));
+const Empresa = lazy(() => import('../pages/gestao/Empresa'));
 
 const routeFallbackStyle = {
   minHeight: '40vh',
@@ -139,6 +140,7 @@ const AppRoutes = () => {
           <Route path="atendimentos/novo" element={<FormAtendimento />} />
           <Route path="atendimentos/:id" element={<FormAtendimento />} />
           <Route path="gestao" element={<AdminRoute><GestaoAuxiliares /></AdminRoute>} />
+          <Route path="empresa" element={<AdminRoute><Empresa /></AdminRoute>} />
           {/* Add more private routes here */}
         </Route>
 

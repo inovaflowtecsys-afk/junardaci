@@ -1,0 +1,13 @@
+1) Na tela de login deixar sem nenhuma informação nos campos "login" e "senha"
+2) Crie um cadastro de empresa com dados completo, endereço, responsável com cpf e contato (celular) e um repositírio para anexar documentos). Envie o schema para criar o a tabela no banco de dados. acesso somente administrador
+
+ssh root@129.121.53.213 -p 22022
+cd junardaci
+INF2026inf@
+http://129.121.53.213:8080
+http://app.junardaci.inovaflowtec.com.br:8081
+
+ls -la ver os arquivos
+Cria a pasta
+mkdir -p /root/junardaci
+cd /root/junardaci

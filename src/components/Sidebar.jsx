@@ -11,7 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings2,
-  KeyRound
+  KeyRound,
+  Building2
 } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { useAuth } from '../contexts/AuthContext';
@@ -30,6 +31,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
     { path: '/atendimentos', icon: <ClipboardList size={22} />, label: 'Atendimentos' },
     { path: '/profissionais', icon: <UserRound size={22} />, label: 'Profissionais', adminOnly: true },
     { path: '/gestao', icon: <Settings2 size={22} />, label: 'Gestão', adminOnly: true },
+    { path: '/empresa', icon: <Building2 size={22} />, label: 'Empresa', adminOnly: true },
     { path: '/alterar-senha', icon: <KeyRound size={22} />, label: 'Alterar Senha', adminOnly: false, bottom: true },
   ];
 

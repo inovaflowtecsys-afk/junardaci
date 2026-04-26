@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Save, Play, CheckCircle, XCircle, Gift, TicketPercent, Plus, FileText, CreditCard, Package, Wallet, QrCode, Landmark, Pill, FlaskConical, Trash2 } from 'lucide-react';
 import styles from '../../styles/forms.module.css';
@@ -990,7 +990,6 @@ const FormAtendimento = () => {
                       <th>Qtd.</th>
                       <th>Valor Médio</th>
                       <th>Cliente</th>
-                      <th>Atendimento</th>
                       <th>Movimentação</th>
                       <th>Ações</th>
                     </tr>
@@ -1011,7 +1010,6 @@ const FormAtendimento = () => {
                         <td>{item.quantidade}</td>
                         <td>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valorMedio)}</td>
                         <td>{selectedClient?.nome || '-'}</td>
-                        <td>{item.atendimentoId}</td>
                         <td>{item.movimentacao}</td>
                         <td className={styles.tableActionsCell}>
                           {canDeleteLine && (
