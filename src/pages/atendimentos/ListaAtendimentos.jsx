@@ -18,12 +18,8 @@ const ListaAtendimentos = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('TODOS');
   const [atendimentos, setAtendimentos] = useState([]);
-  const [clientes, setClientes] = useState([]);
-  const [tratamentos, setTratamentos] = useState([]);
-  const [profissionais, setProfissionais] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   useEffect(() => {
     let mounted = true;
 
@@ -32,18 +28,26 @@ const ListaAtendimentos = () => {
       setError('');
 
       try {
-        const [atendimentosData, clientesData, tratamentosData, profissionaisData] = await Promise.all([
-          fetchRows('atendimentos', { orderBy: 'created_at' }),
-          fetchRows('clientes', { orderBy: 'nome' }),
-          fetchRows('tratamentos', { orderBy: 'nome' }),
-          fetchRows('profissionais', { orderBy: 'nome' }),
-        ]);
+        const options = {
+          orderBy: 'created_at',
+          ascending: false,
+          limit: 50,
+          select: '*, clientes!inner(nome), tratamentos(nome), profissionais(nome)'
+        };
+
+        const term = searchTerm.trim();
+        if (term) {
+          // Quando pesquisar em tabela estrangeira, Supabase JS suporta ilike
+          // Porem or() nas tabelas conectadas requer sintaxe especifica, entao
+          // se o searchTerm bater, vamos buscar em clientes.nome
+          options.ilike = { column: 'clientes.nome', value: `%${term}%` };
+        }
+
+        const data = await fetchRows('atendimentos', options);
 
         if (mounted) {
-          setAtendimentos(atendimentosData);
-          setClientes(clientesData);
-          setTratamentos(tratamentosData);
-          setProfissionais(profissionaisData);
+          setAtendimentos(data);
+          // Nao precisamos mais carregar os maps locais gigantes
         }
       } catch (err) {
         if (mounted) setError(err?.message || 'Nao foi possivel carregar os atendimentos.');
@@ -52,32 +56,20 @@ const ListaAtendimentos = () => {
       }
     };
 
-    loadData();
+    const debounceTimer = setTimeout(() => {
+      loadData();
+    }, 400);
 
     return () => {
       mounted = false;
+      clearTimeout(debounceTimer);
     };
-  }, []);
-
-  const clientMap = useMemo(() => new Map(clientes.map((item) => [item.id, item])), [clientes]);
-  const treatmentMap = useMemo(() => new Map(tratamentos.map((item) => [item.id, item])), [tratamentos]);
-  const professionalMap = useMemo(() => new Map(profissionais.map((item) => [item.id, item])), [profissionais]);
+  }, [searchTerm]);
 
   const filteredAttendances = useMemo(() => atendimentos.filter((item) => {
     const statusMatch = statusFilter === 'TODOS' || item.status === statusFilter;
-    const clientName = (clientMap.get(item.cliente_id)?.nome || '').toLowerCase();
-    const treatmentName = (treatmentMap.get(item.tratamento_id)?.nome || '').toLowerCase();
-    const professionalName = (professionalMap.get(item.profissional_id)?.nome || '').toLowerCase();
-
-    return (
-      statusMatch && (
-        clientName.includes(searchTerm.toLowerCase()) ||
-        treatmentName.includes(searchTerm.toLowerCase()) ||
-        professionalName.includes(searchTerm.toLowerCase()) ||
-        item.status.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
-  }), [atendimentos, clientMap, treatmentMap, professionalMap, searchTerm, statusFilter]);
+    return statusMatch;
+  }), [atendimentos, statusFilter]);
 
   return (
     <div className={styles.container}>
@@ -135,9 +127,9 @@ const ListaAtendimentos = () => {
               {filteredAttendances.map((at) => (
                 <tr key={at.id}>
                   <td>{at.data_inicio ? new Date(at.data_inicio).toLocaleDateString('pt-BR') : '-'}</td>
-                  <td>{clientMap.get(at.cliente_id)?.nome || 'Cliente'}</td>
-                  <td>{treatmentMap.get(at.tratamento_id)?.nome || 'Tratamento'}</td>
-                  <td>{professionalMap.get(at.profissional_id)?.nome || 'Profissional'}</td>
+                  <td>{at.clientes?.nome || 'Cliente'}</td>
+                  <td>{at.tratamentos?.nome || 'Tratamento'}</td>
+                  <td>{at.profissionais?.nome || 'Profissional'}</td>
                   <td>
                     <span className={`${styles.badge} ${styles[at.status.toLowerCase()] || ''}`}>
                       {at.status.replace('_', ' ')}

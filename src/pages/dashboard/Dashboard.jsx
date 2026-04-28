@@ -43,15 +43,19 @@ const formatDateTime = (value) => {
 };
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, sessionReady } = useAuth();
   const [loading, setLoading] = useState(true);
   const [rulesError, setRulesError] = useState('');
-  const [clientes, setClientes] = useState([]);
+  const [clientesAtivosCount, setClientesAtivosCount] = useState(0);
   const [tratamentos, setTratamentos] = useState([]);
-  const [profissionais, setProfissionais] = useState([]);
   const [atendimentos, setAtendimentos] = useState([]);
+  const [ultimosAtendimentosData, setUltimosAtendimentosData] = useState([]);
 
   useEffect(() => {
+    // Aguarda a sessão estar pronta e o usuário autenticado
+    // para evitar queries com token vazio ("Empty token!")
+    if (!sessionReady || !user?.id) return;
+
     let mounted = true;
 
     const loadDashboard = async () => {
@@ -60,28 +64,28 @@ const Dashboard = () => {
 
       try {
         const atendimentosOptions = { orderBy: 'created_at', ascending: false };
-        if (user && !user.isAdmin && user.id) {
+        if (!user.isAdmin) {
           atendimentosOptions.eq = { column: 'profissional_id', value: user.id };
         }
 
         const [
-          clientesData,
+          clientesCount,
           tratamentosData,
-          profissionaisData,
           atendimentosData,
+          ultimosData,
         ] = await Promise.all([
-          fetchRows('clientes', { orderBy: 'nome' }),
-          fetchRows('tratamentos', { orderBy: 'nome' }),
-          fetchRows('profissionais', { orderBy: 'nome' }),
-          fetchRows('atendimentos', atendimentosOptions),
+          fetchRows('clientes', { eq: { column: 'ativo', value: true }, count: 'exact', head: true }),
+          fetchRows('tratamentos', { select: 'id, nome' }),
+          fetchRows('atendimentos', { ...atendimentosOptions, select: 'id, status, tratamento_id, data_inicio, created_at, updated_at' }),
+          fetchRows('atendimentos', { ...atendimentosOptions, limit: 8, select: 'id, status, data_inicio, created_at, updated_at, clientes!inner(nome), tratamentos(nome), profissionais(nome)' }),
         ]);
 
         if (!mounted) return;
 
-        setClientes(clientesData || []);
+        setClientesAtivosCount(clientesCount || 0);
         setTratamentos(tratamentosData || []);
-        setProfissionais(profissionaisData || []);
         setAtendimentos(atendimentosData || []);
+        setUltimosAtendimentosData(ultimosData || []);
       } catch (err) {
         if (mounted) setRulesError(err?.message || 'Não foi possível carregar os dados do dashboard.');
       } finally {
@@ -94,7 +98,7 @@ const Dashboard = () => {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [sessionReady, user?.id]);
 
   const currentYear = new Date().getFullYear();
   const previousYear = currentYear - 1;
@@ -162,26 +166,15 @@ const Dashboard = () => {
   }, [atendimentos, tratamentos]);
 
   const ultimosAtendimentos = useMemo(() => {
-    const clientMap = new Map(clientes.map((item) => [item.id, item.nome]));
-    const tratamentoMap = new Map(tratamentos.map((item) => [item.id, item.nome]));
-    const profissionalMap = new Map(profissionais.map((item) => [item.id, item.nome]));
-
-    return [...atendimentos]
-      .sort((a, b) => {
-        const dateA = new Date(getDateValue(a) || 0).getTime();
-        const dateB = new Date(getDateValue(b) || 0).getTime();
-        return dateB - dateA;
-      })
-      .slice(0, 8)
-      .map((item) => ({
-        id: item.id,
-        cliente: clientMap.get(item.cliente_id) || 'Cliente nao identificado',
-        tratamento: tratamentoMap.get(item.tratamento_id) || 'Tratamento nao identificado',
-        profissional: profissionalMap.get(item.profissional_id) || 'Profissional nao identificado',
-        status: item.status,
-        dataHora: formatDateTime(getDateValue(item)),
-      }));
-  }, [atendimentos, clientes, profissionais, tratamentos]);
+    return ultimosAtendimentosData.map((item) => ({
+      id: item.id,
+      cliente: item.clientes?.nome || 'Cliente nao identificado',
+      tratamento: item.tratamentos?.nome || 'Tratamento nao identificado',
+      profissional: item.profissionais?.nome || 'Profissional nao identificado',
+      status: item.status,
+      dataHora: formatDateTime(getDateValue(item)),
+    }));
+  }, [ultimosAtendimentosData]);
 
   const statusChart = useMemo(() => {
     const total = atendimentos.length;
@@ -243,7 +236,7 @@ const Dashboard = () => {
     },
     {
       title: 'Clientes ativos',
-      value: clientes.filter((item) => item.ativo).length,
+      value: clientesAtivosCount,
       icon: <UserRound size={22} />,
       tone: 'gold',
     },

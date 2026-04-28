@@ -19,29 +19,32 @@ const ListaClientes = () => {
       setError('');
 
       try {
-        const data = await fetchRows('clientes', { orderBy: 'nome' });
+        const options = { orderBy: 'nome', limit: 50 };
+        const term = searchTerm.trim();
+        
+        if (term) {
+          options.or = `nome.ilike.%${term}%,cpf.ilike.%${term}%`;
+        }
+
+        const data = await fetchRows('clientes', options);
         if (mounted) setClientes(data);
       } catch (err) {
-        // Log detalhado no console
-        // eslint-disable-next-line no-console
         console.error('Erro ao carregar clientes:', err);
-        if (mounted) setError((err && err.message ? err.message : 'Nao foi possivel carregar os clientes.') + (err && err.code ? ` [${err.code}]` : ''));
+        if (mounted) setError((err?.message || 'Nao foi possivel carregar os clientes.') + (err?.code ? ` [${err.code}]` : ''));
       } finally {
         if (mounted) setLoading(false);
       }
     };
 
-    loadClientes();
+    const debounceTimer = setTimeout(() => {
+      loadClientes();
+    }, 400); // 400ms debounce
 
     return () => {
       mounted = false;
+      clearTimeout(debounceTimer);
     };
-  }, []);
-
-  const filteredClients = useMemo(() => clientes.filter((client) =>
-    client.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.cpf.includes(searchTerm)
-  ), [clientes, searchTerm]);
+  }, [searchTerm]);
 
   return (
     <div className={styles.container}>
@@ -85,7 +88,7 @@ const ListaClientes = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredClients.map((client) => (
+            {clientes.map((client) => (
               <tr key={client.id}>
                 <td>
                   <div className={styles.clientInfo}>

@@ -1,284 +1,250 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { hasSupabaseConfig, supabase } from '../lib/supabaseClient';
 
+// ─── Context default ──────────────────────────────────────────────────────────
 const defaultAuthContext = {
   user: null,
-  loading: false,
+  loading: true,
+  sessionReady: false,
   authError: '',
   signed: false,
-  login: async () => {
-    throw new Error('Autenticação indisponível no momento');
-  },
-  signIn: async () => {
-    throw new Error('Autenticação indisponível no momento');
-  },
+  login: async () => { throw new Error('Autenticação indisponível'); },
+  signIn: async () => { throw new Error('Autenticação indisponível'); },
   logout: () => {},
 };
 
 const AuthContext = createContext(defaultAuthContext);
 
-const getUserByCredentials = (email, password) => {
-  if (email === 'admin@clinica.com' && password === 'Admin@123') {
-    return {
-      id: 'p1',
-      nome: 'Dra. Juliana Nardaci',
-      email: 'admin@clinica.com',
-      role: 'admin',
-      avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=200&q=80'
-    };
-  }
-
-  if (email === 'profissional@clinica.com' && password === 'Prof@123') {
-    return {
-      id: 'p2',
-      nome: 'Dra. Maria Silva',
-      email: 'profissional@clinica.com',
-      role: 'profissional',
-      avatar: 'https://images.unsplash.com/photo-1594824475317-87f4c9d3e8f6?auto=format&fit=crop&w=200&q=80'
-    };
-  }
-
-  return null;
-};
-
-const normalizeRole = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const normalizeRole = (value) =>
+  typeof value === 'string' ? value.trim().toLowerCase() : '';
 
 const isAdminRole = (value) => {
-  const normalized = normalizeRole(value);
-  return normalized === 'admin' || normalized === 'administrador' || normalized.startsWith('admin');
+  const r = normalizeRole(value);
+  return r === 'admin' || r === 'administrador' || r.startsWith('admin');
 };
 
 const mapAuthUser = (authUser, profile) => {
-  const profileRole = normalizeRole(profile?.role);
-  const appRole = normalizeRole(authUser.app_metadata?.role);
-  const userMetadataRole = normalizeRole(authUser.user_metadata?.role);
+  const profileRole  = normalizeRole(profile?.role);
+  const appRole      = normalizeRole(authUser.app_metadata?.role);
+  const metaRole     = normalizeRole(authUser.user_metadata?.role);
 
-  const adminFromAnySource = isAdminRole(profileRole) || isAdminRole(appRole) || isAdminRole(userMetadataRole);
-  const effectiveRole = adminFromAnySource ? 'admin' : profileRole || appRole || userMetadataRole || 'profissional';
+  const adminFromAny = isAdminRole(profileRole) || isAdminRole(appRole) || isAdminRole(metaRole);
+  const effectiveRole = adminFromAny
+    ? 'admin'
+    : profileRole || appRole || metaRole || 'profissional';
 
   return {
-  id: profile?.id || authUser.id,
-  nome:
-    profile?.nome ||
-    authUser.user_metadata?.nome ||
-    authUser.user_metadata?.full_name ||
-    'Usuário',
-  email: authUser.email || profile?.email || '',
-  role: effectiveRole,
-  isAdmin: adminFromAnySource,
-  setor: profile?.setores?.nome || null,
-  avatar:
-    profile?.avatar_url ||
-    authUser.user_metadata?.avatar_url ||
-    authUser.app_metadata?.avatar_url ||
-    '',
+    id:      profile?.id || authUser.id,
+    nome:    profile?.nome || authUser.user_metadata?.nome || authUser.user_metadata?.full_name || 'Usuário',
+    email:   authUser.email || profile?.email || '',
+    role:    effectiveRole,
+    isAdmin: adminFromAny,
+    setor:   profile?.setores?.nome || null,
+    avatar:  profile?.avatar_url || authUser.user_metadata?.avatar_url || '',
   };
 };
 
-const ENABLE_PROFILE_LOOKUP = true;
+// Busca perfil sem recursão: a função no banco é SECURITY DEFINER
+const fetchProfile = async (authUserId) => {
+  if (!supabase || !authUserId) return { profile: null, profileError: null };
 
-const fetchProfileByAuthUserId = async (authUserId, _timeoutMs = 10000, maxRetries = 3, retryDelay = 1000) => {
-  if (!ENABLE_PROFILE_LOOKUP || !supabase || !authUserId) {
-    return { profile: null, profileError: null };
-  }
-
-  let lastError = null;
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
     const { data, error } = await supabase
       .from('profissionais')
       .select('id,nome,email,role,avatar_url,auth_user_id,setores(nome)')
       .eq('auth_user_id', authUserId)
       .maybeSingle();
 
-    if (data && !error) {
-      return { profile: data, profileError: null };
-    }
-    lastError = error;
-    // Aguarda antes de tentar novamente
-    if (attempt < maxRetries) {
-      await new Promise((res) => setTimeout(res, retryDelay));
-    }
+    if (data && !error) return { profile: data, profileError: null };
+    if (attempt < 3) await new Promise((r) => setTimeout(r, 800 * attempt));
   }
-  return {
-    profile: null,
-    profileError: lastError ?? new Error('Não foi possível carregar o perfil do profissional.'),
-  };
+
+  return { profile: null, profileError: new Error('Não foi possível carregar o perfil.') };
 };
 
+// ─── Provider ─────────────────────────────────────────────────────────────────
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    // Nunca use localStorage se Supabase está ativo
-    if (hasSupabaseConfig) return null;
-    const savedUser = sessionStorage.getItem('@Clinic:user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-  const [loading, setLoading] = useState(hasSupabaseConfig);
-  const [authError, setAuthError] = useState('');
-  const bootstrappingRef = React.useRef(false);
+  const [user,         setUser]         = useState(null);
+  const [loading,      setLoading]      = useState(hasSupabaseConfig);
+  const [sessionReady, setSessionReady] = useState(!hasSupabaseConfig);
+  const [authError,    setAuthError]    = useState('');
 
+  const bootstrapped = useRef(false);
+  const mounted      = useRef(true);
+
+  // ── Marca a sessão como pronta e libera o loading ─────────────────────────
+  const markReady = useCallback(() => {
+    if (!mounted.current) return;
+    setLoading(false);
+    setSessionReady(true);
+  }, []);
+
+  // ── Bootstrap: lê a sessão salva no localStorage ao montar ───────────────
   useEffect(() => {
-    let mounted = true;
-    let bootstrapTimeoutId;
+    mounted.current = true;
 
-    const logAuthDebug = (stage, payload = {}) => {
-      // Logs temporarios para diagnosticar fluxo de autenticacao e redirecionamento.
-      console.info('[AUTH_DEBUG]', stage, payload);
-    };
-
-    const clearBootstrapTimeout = () => {
-      if (bootstrapTimeoutId) {
-        clearTimeout(bootstrapTimeoutId);
+    if (!hasSupabaseConfig || !supabase) {
+      if (hasSupabaseConfig) {
+        setAuthError('Cliente Supabase não inicializado.');
       }
-    };
-
-    const finishBootstrap = () => {
-      clearBootstrapTimeout();
-      if (mounted) setLoading(false);
-    };
-
-    if (hasSupabaseConfig) {
-      bootstrapTimeoutId = setTimeout(() => {
-        if (!mounted) return;
-        // Se ainda estiver carregando apos 15 segundos, tenta liberar a trava
-        setAuthError('A validação da sessão está demorando. Isso pode ser um conflito de abas abertas.');
-        setLoading(false);
-      }, 15000);
+      markReady();
+      return;
     }
 
-    const hydrateSupabaseUser = async () => {
-      if (bootstrappingRef.current) return;
-      bootstrappingRef.current = true;
+    if (bootstrapped.current) return;
+    bootstrapped.current = true;
 
+    // Timeout de segurança: se demorar mais de 12s, libera a UI
+    const safetyTimer = setTimeout(() => {
+      if (!mounted.current) return;
+      setAuthError('A validação da sessão demorou demais. Tente recarregar a página.');
+      markReady();
+    }, 12000);
+
+    const bootstrap = async () => {
       try {
-        logAuthDebug('bootstrap:start', { hasSupabaseConfig, hasClient: Boolean(supabase) });
-        setAuthError('');
-        
-        const { data, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.warn('[AUTH_DEBUG] bootstrap:session_error', sessionError);
-          // Nao limpa tudo aqui, apenas registra o erro
+        // 1. Pega a sessão do localStorage (pode estar expirada)
+        let { data, error } = await supabase.auth.getSession();
+
+        if (error) console.warn('[AUTH] getSession error:', error.message);
+
+        let sessionUser = data?.session?.user ?? null;
+
+        // 2. Se o token expirou, tenta refresh silencioso
+        if (!sessionUser && data?.session) {
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          sessionUser = refreshed?.session?.user ?? null;
         }
 
-        const sessionUser = data?.session?.user;
-        logAuthDebug('bootstrap:session', { hasSessionUser: Boolean(sessionUser) });
-
-        if (!mounted) return;
+        if (!mounted.current) return;
 
         if (!sessionUser) {
           setUser(null);
-          finishBootstrap();
+          clearTimeout(safetyTimer);
+          markReady();
           return;
         }
 
-        // Define usuario basico imediatamente para liberar a tela
+        // 3. Define usuário básico imediatamente (sem bloquear a UI)
         setUser(mapAuthUser(sessionUser, null));
-        finishBootstrap();
+        clearTimeout(safetyTimer);
+        markReady();
 
-        // Busca o perfil em segundo plano para nao travar o app
-        const { profile, profileError } = await fetchProfileByAuthUserId(sessionUser.id);
-        if (!mounted) return;
+        // 4. Busca perfil em background
+        const { profile, profileError } = await fetchProfile(sessionUser.id);
+        if (!mounted.current) return;
+        if (profile) setUser(mapAuthUser(sessionUser, profile));
+        if (profileError) console.error('[AUTH] profile fetch error:', profileError.message);
 
-        if (profile) {
-          setUser(mapAuthUser(sessionUser, profile));
-        }
-        
-        if (profileError) {
-          console.error('[AUTH_DEBUG] bootstrap:profile_error', profileError);
-        }
-      } catch (error) {
-        if (!mounted) return;
-        console.error('[AUTH_DEBUG] bootstrap:catch', error);
+      } catch (err) {
+        if (!mounted.current) return;
+        console.error('[AUTH] bootstrap error:', err);
         setUser(null);
-        setAuthError('Falha na validação da sessão. Tente fazer login novamente.');
-      } finally {
-        finishBootstrap();
-        bootstrappingRef.current = false;
-        logAuthDebug('bootstrap:finish');
+        clearTimeout(safetyTimer);
+        markReady();
       }
     };
 
-    if (hasSupabaseConfig && supabase) {
-      hydrateSupabaseUser();
+    bootstrap();
 
-      const { data: listener } = supabase.auth.onAuthStateChange(async (_, session) => {
-        if (!mounted) return;
-        logAuthDebug('auth_state_change', {
-          eventHasSession: Boolean(session),
-          sessionUserId: session?.user?.id || null,
-        });
+    // ── Listener do Supabase: dispara em login, logout, refresh de token ──
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted.current) return;
 
-        if (!session?.user) {
-          setUser(null);
-          setAuthError('');
-          setLoading(false);
-          logAuthDebug('auth_state_change:logout');
+      if (!session?.user) {
+        setUser(null);
+        setAuthError('');
+        markReady();
+        return;
+      }
+
+      // Atualiza usuário básico imediatamente
+      setUser(mapAuthUser(session.user, null));
+      setAuthError('');
+      markReady();
+
+      // Busca perfil em background
+      const { profile, profileError } = await fetchProfile(session.user.id);
+      if (!mounted.current) return;
+      if (profile) setUser(mapAuthUser(session.user, profile));
+      if (profileError) console.error('[AUTH] onAuthStateChange profile error:', profileError.message);
+    });
+
+    // ── visibilitychange: revalida token ao voltar para a aba ─────────────
+    // NÃO derruba sessão válida — só faz refresh se o token estiver expirado.
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState !== 'visible') return;
+
+      try {
+        const { data } = await supabase.auth.getSession();
+        const session  = data?.session;
+
+        if (!session) {
+          // Sem sessão: o onAuthStateChange já cuidará disso
           return;
         }
 
-        try {
-          setUser(mapAuthUser(session.user, null));
-          setAuthError('');
-          setLoading(false);
+        // Verifica se o token expira em menos de 60 segundos
+        const expiresAt = session.expires_at; // unix timestamp
+        const now       = Math.floor(Date.now() / 1000);
 
-          const { profile, profileError } = await fetchProfileByAuthUserId(session.user.id);
-
-          if (!mounted) return;
-
-          setUser(mapAuthUser(session.user, profile));
-          setAuthError(profileError?.message || '');
-          if (profileError) {
-            console.error('[AUTH_DEBUG] auth_state_change:profile_error', profileError);
+        if (expiresAt && expiresAt - now < 60) {
+          // Força refresh silencioso
+          const { data: refreshed, error } = await supabase.auth.refreshSession();
+          if (error) {
+            console.warn('[AUTH] refresh failed on visibilitychange:', error.message);
+            return;
           }
-        } catch (error) {
-          if (!mounted) return;
-          console.error('[AUTH_DEBUG] auth_state_change:catch', error);
-          setUser(null);
-          setAuthError(error?.message || 'Nao foi possivel atualizar a sessao autenticada.');
-        } finally {
-          if (mounted) setLoading(false);
-          logAuthDebug('auth_state_change:finish', {
-            signed: Boolean(session?.user),
-          });
+          if (refreshed?.session?.user && mounted.current) {
+            setUser(mapAuthUser(refreshed.session.user, null));
+            // Busca perfil atualizado em background
+            fetchProfile(refreshed.session.user.id).then(({ profile }) => {
+              if (profile && mounted.current) setUser(mapAuthUser(refreshed.session.user, profile));
+            });
+          }
         }
-      });
+        // Se o token ainda é válido, não faz nada — evita "Empty token!"
+      } catch (err) {
+        console.warn('[AUTH] visibilitychange error:', err.message);
+      }
+    };
 
-      return () => {
-        mounted = false;
-        clearBootstrapTimeout();
-        listener.subscription.unsubscribe();
-      };
-    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    if (hasSupabaseConfig && !supabase) {
-      setAuthError('A configuracao do Supabase foi detectada, mas o cliente nao foi inicializado. Ele não prosseguiu para a tela de login.');
-      setLoading(false);
-    }
+    // ── beforeunload: logout ao fechar o navegador/aba ─────────────────────
+    const handleBeforeUnload = () => {
+      // fire-and-forget: o browser pode não aguardar promises, mas
+      // signOut() limpa o localStorage antes de fechar.
+      try { supabase.auth.signOut(); } catch (_) {}
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-      mounted = false;
-      clearBootstrapTimeout();
+      mounted.current = false;
+      clearTimeout(safetyTimer);
+      listener.subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
+  // ── login ─────────────────────────────────────────────────────────────────
   const login = async (email, password) => {
-    console.info('[AUTH_DEBUG] login:start', { email });
     setLoading(true);
+    setAuthError('');
 
     if (hasSupabaseConfig && supabase) {
-      const trimmedEmail = email.trim();
-      const trimmedPassword = password.trim();
-      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: trimmedEmail,
-        password: trimmedPassword,
+        email: email.trim(),
+        password: password.trim(),
       });
 
       if (error) {
-        console.error('[AUTH_DEBUG] login:supabase_error', error);
-        setAuthError(error.message || 'Nao foi possivel autenticar com o Supabase.');
+        setAuthError(error.message || 'Não foi possível autenticar.');
         setLoading(false);
         throw error;
       }
@@ -292,67 +258,46 @@ export const AuthProvider = ({ children }) => {
       const nextUser = mapAuthUser(authUser, null);
       setUser(nextUser);
       setAuthError('');
-      setLoading(false);
-      console.info('[AUTH_DEBUG] login:success', {
-        authUserId: authUser.id,
-        mappedUserId: nextUser.id,
-        role: nextUser.role,
-      });
+      markReady();
 
-      fetchProfileByAuthUserId(authUser.id)
+      // Busca perfil em background sem bloquear o redirect
+      fetchProfile(authUser.id)
         .then(({ profile, profileError }) => {
-          if (profile) {
-            setUser(mapAuthUser(authUser, profile));
-          }
-
-          if (profileError) {
-            console.error('[AUTH_DEBUG] login:profile_error', profileError);
-            setAuthError(profileError.message || '');
-          }
+          if (profile) setUser(mapAuthUser(authUser, profile));
+          if (profileError) console.error('[AUTH] login profile error:', profileError.message);
         })
-        .catch((profileErr) => {
-          console.error('[AUTH_DEBUG] login:profile_fetch_catch', profileErr);
-          setAuthError(profileErr?.message || '');
-        });
+        .catch((err) => console.error('[AUTH] login profile catch:', err.message));
 
-      // Nunca salve no localStorage se Supabase está ativo
       return nextUser;
     }
 
+    // Fallback sem Supabase (modo demo)
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        const userData = getUserByCredentials(email, password);
-
-        if (userData) {
-          setUser(userData);
-          sessionStorage.setItem('@Clinic:user', JSON.stringify(userData));
-          resolve(userData);
-        } else {
-          reject(new Error('Credenciais inválidas'));
-        }
-
         setLoading(false);
-      }, 600);
+        reject(new Error('Supabase não configurado.'));
+      }, 400);
     });
   };
 
-  const logout = () => {
+  // ── logout ────────────────────────────────────────────────────────────────
+  const logout = async () => {
     if (hasSupabaseConfig && supabase) {
-      supabase.auth.signOut();
+      await supabase.auth.signOut();
     }
-
     setUser(null);
-    sessionStorage.removeItem('@Clinic:user');
+    setSessionReady(false);
   };
 
   const value = {
     user,
     loading,
+    sessionReady,
     authError,
+    signed: !!user,
     login,
     signIn: login,
     logout,
-    signed: !!user,
   };
 
   return (
